@@ -1,0 +1,283 @@
+#ifndef ISAINTERFACE_H
+#define ISAINTERFACE_H
+
+#include "isa.h"
+#include "exception.h"
+#include "Eigen/Core"
+#include <iostream>
+
+using namespace Eigen;
+
+struct ISAObject {
+	PyObject_HEAD
+	ISA* isa;
+};
+
+
+
+/**
+ * Turn an Eigen matrix into a NumPy array.
+ */
+static PyObject* PyArray_FromMatrixXd(const MatrixXd& mat) {
+	// matrix dimensionality
+	npy_intp dims[2];
+	dims[0] = mat.rows();
+	dims[1] = mat.cols();
+
+	// allocate PyArray
+	#ifdef EIGEN_DEFAULT_TO_ROW_MAJOR
+	PyObject* array = PyArray_New(&PyArray_Type, 2, dims, NPY_DOUBLE, 0, 0, 0, NPY_C_CONTIGUOUS, 0);
+	#else
+	PyObject* array = PyArray_New(&PyArray_Type, 2, dims, NPY_DOUBLE, 0, 0, 0, NPY_F_CONTIGUOUS, 0);
+	#endif
+
+	// copy data
+	const double* data = mat.data();
+	double* dataCopy = reinterpret_cast<double*>(PyArray_DATA(array));
+
+	for(int i = 0; i < mat.size(); ++i)
+		dataCopy[i] = data[i];
+
+	return array;
+}
+
+
+
+/**
+ * Turn a NumPy array into an Eigen matrix.
+ */
+static MatrixXd PyArray_ToMatrixXd(PyObject* array) {
+ 	if(PyArray_FLAGS(array) & NPY_F_CONTIGUOUS)
+ 		return Map<Matrix<double, Dynamic, Dynamic, ColMajor> >(
+ 			reinterpret_cast<double*>(PyArray_DATA(array)),
+ 			PyArray_DIM(array, 0), 
+ 			PyArray_DIM(array, 1));
+ 
+ 	if(PyArray_FLAGS(array) & NPY_C_CONTIGUOUS) 
+ 		return Map<Matrix<double, Dynamic, Dynamic, RowMajor> >(
+ 			reinterpret_cast<double*>(PyArray_DATA(array)),
+ 			PyArray_DIM(array, 0), 
+ 			PyArray_DIM(array, 1));
+
+	throw Exception("Data must be stored in contiguous memory.");
+}
+
+
+
+/**
+ * Create a new ISA object.
+ */
+static PyObject* ISA_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
+	PyObject* self = type->tp_alloc(type, 0);
+
+	if(self)
+		reinterpret_cast<ISAObject*>(self)->isa = 0;
+
+	return self;
+}
+
+
+
+/**
+ * Initialize ISA object.
+ */
+static int ISA_init(ISAObject* self, PyObject* args, PyObject* kwds) {
+	char* kwlist[] = {"num_visibles", "num_hiddens", "ssize", "num_scales", 0};
+	int num_visibles;
+	int num_hiddens = -1;
+	int ssize = 1;
+	int num_scales = 10;
+
+	// read arguments
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "i|iii", kwlist,
+		&num_visibles, &num_hiddens, &ssize, &num_scales))
+		return -1;
+
+	// create actual ISA instance
+	self->isa = new ISA(num_visibles, num_hiddens, ssize, num_scales);
+
+	return 0;
+}
+
+
+
+/**
+ * Delete ISA object.
+ */
+static void ISA_dealloc(ISAObject* self) {
+	// free actual ISA instance
+	delete self->isa;
+
+	// free ISA object
+	self->ob_type->tp_free(reinterpret_cast<PyObject*>(self));
+}
+
+
+
+/**
+ * Return number of visible units.
+ */
+static PyObject* ISA_num_visibles(ISAObject* self, PyObject*, void*) {
+	return PyInt_FromLong(self->isa->numVisibles());
+}
+
+
+
+/**
+ * Return number of hidden units.
+ */
+static PyObject* ISA_num_hiddens(ISAObject* self, PyObject*, void*) {
+	return PyInt_FromLong(self->isa->numHiddens());
+}
+
+
+
+/**
+ * Return copy of linear basis.
+ */
+static PyObject* ISA_A(ISAObject* self, PyObject*, void*) {
+	return PyArray_FromMatrixXd(self->isa->basis());
+}
+
+
+
+/**
+ * Replace linear basis.
+ */
+static int ISA_set_A(ISAObject* self, PyObject* value, void*) {
+	if(!PyArray_Check(value)) {
+		PyErr_SetString(PyExc_TypeError, "Basis should be of type `ndarray`.");
+		return -1;
+	}
+
+	try {
+		self->isa->setBasis(PyArray_ToMatrixXd(value));
+
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return -1;
+	}
+
+	return 0;
+}
+
+
+
+static PyObject* ISA_train(ISAObject* self, PyObject* args, PyObject* kwds) {
+	char* kwlist[] = {"data", "parameters", 0};
+
+	PyObject* data;
+	PyObject* parameters = 0;
+
+	// read arguments
+ 	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &data, &parameters))
+ 		return 0;
+
+	// make sure data is stored in NumPy array
+	if(!PyArray_Check(data)) {
+		PyErr_SetString(PyExc_TypeError, "Data has to be stored in a NumPy array.");
+		return 0;
+	}
+
+ 	Parameters params;
+
+	if(parameters) {
+		if(!PyDict_Check(parameters)) {
+			PyErr_SetString(PyExc_TypeError, "Parameters should be stored in a dictionary.");
+			return 0;
+		}
+ 
+  		PyObject* trainingMethod = PyDict_GetItemString(parameters, "training_method");
+   		if(trainingMethod && PyString_Check(trainingMethod))
+  			params.trainingMethod = PyString_AsString(trainingMethod);
+ 
+  		PyObject* samplingMethod = PyDict_GetItemString(parameters, "sampling_method");
+  		if(samplingMethod && PyString_Check(samplingMethod))
+ 			params.trainingMethod = PyString_AsString(samplingMethod);
+
+  		PyObject* adaptive = PyDict_GetItemString(parameters, "adaptive");
+  		if(adaptive && PyBool_Check(adaptive))
+ 			params.adaptive = (adaptive == Py_True);
+
+  		PyObject* SGD = PyDict_GetItemString(parameters, "sgd");
+  		if(SGD && PyDict_Check(SGD)) {
+ 			PyObject* maxIter = PyDict_GetItemString(parameters, "max_iter");
+ 			if(maxIter && PyInt_Check(maxIter))
+ 				params.SGD.maxIter = PyInt_AsLong(maxIter);
+ 		}
+	}
+
+	try {
+		// fit model to training data
+   		self->isa->train(PyArray_ToMatrixXd(data), params); 
+
+	} catch(Exception exception) {
+ 		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+
+
+static PyGetSetDef ISA_getset[] = {
+	{"num_visibles", (getter)ISA_num_visibles, 0, 0},
+	{"num_hiddens", (getter)ISA_num_hiddens, 0, 0},
+	{"A", (getter)ISA_A, (setter)ISA_set_A, 0},
+	{0}
+};
+
+
+
+static PyMethodDef ISA_methods[] = {
+	{"train", (PyCFunction)ISA_train, METH_KEYWORDS, 0},
+	{0}
+};
+
+
+
+static PyTypeObject ISA_type = {
+	PyObject_HEAD_INIT(0)
+	0,                         /*ob_size*/
+	"isa.ISA",                 /*tp_name*/
+	sizeof(ISAObject),         /*tp_basicsize*/
+	0,                         /*tp_itemsize*/
+	(destructor)ISA_dealloc,   /*tp_dealloc*/
+	0,                         /*tp_print*/
+	0,                         /*tp_getattr*/
+	0,                         /*tp_setattr*/
+	0,                         /*tp_compare*/
+	0,                         /*tp_repr*/
+	0,                         /*tp_as_number*/
+	0,                         /*tp_as_sequence*/
+	0,                         /*tp_as_mapping*/
+	0,                         /*tp_hash */
+	0,                         /*tp_call*/
+	0,                         /*tp_str*/
+	0,                         /*tp_getattro*/
+	0,                         /*tp_setattro*/
+	0,                         /*tp_as_buffer*/
+	Py_TPFLAGS_DEFAULT,        /*tp_flags*/
+	0,                         /*tp_doc*/
+	0,                         /*tp_traverse*/
+	0,                         /*tp_clear*/
+	0,                         /*tp_richcompare*/
+	0,                         /*tp_weaklistoffset*/
+	0,                         /*tp_iter*/
+	0,                         /*tp_iternext*/
+	ISA_methods,               /*tp_methods*/
+	0,                         /*tp_members*/
+	ISA_getset,                /*tp_getset*/
+	0,                         /*tp_base*/
+	0,                         /*tp_dict*/
+	0,                         /*tp_descr_get*/
+	0,                         /*tp_descr_set*/
+	0,                         /*tp_dictoffset*/
+	(initproc)ISA_init,        /*tp_init*/
+	0,                         /*tp_alloc*/
+	ISA_new,                   /*tp_new*/
+};
+
+#endif
