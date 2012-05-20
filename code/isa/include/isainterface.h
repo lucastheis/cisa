@@ -163,6 +163,50 @@ static int ISA_set_A(ISAObject* self, PyObject* value, void*) {
 
 
 
+static PyObject* ISA_default_parameters(ISAObject* self) {
+	Parameters params;
+	PyObject* parameters = PyDict_New();
+	PyObject* SGD = PyDict_New();
+
+	PyDict_SetItemString(parameters, "training_method",
+		PyString_FromString(params.trainingMethod.c_str()));
+	PyDict_SetItemString(parameters, "sampling_method",
+		PyString_FromString(params.samplingMethod.c_str()));
+
+	if(params.adaptive) {
+		PyDict_SetItemString(parameters, "adaptive", Py_True);
+		Py_INCREF(Py_True);
+	} else {
+		PyDict_SetItemString(parameters, "adaptive", Py_False);
+		Py_INCREF(Py_False);
+	}
+
+	PyDict_SetItemString(SGD, "max_iter", PyInt_FromLong(params.SGD.maxIter));
+	PyDict_SetItemString(SGD, "batch_size", PyInt_FromLong(params.SGD.batchSize));
+	PyDict_SetItemString(SGD, "step_width", PyFloat_FromDouble(params.SGD.stepWidth));
+	PyDict_SetItemString(SGD, "momentum", PyFloat_FromDouble(params.SGD.momentum));
+
+	if(params.SGD.shuffle) {
+		PyDict_SetItemString(SGD, "shuffle", Py_True);
+		Py_INCREF(Py_True);
+	} else {
+		PyDict_SetItemString(SGD, "shuffle", Py_False);
+		Py_DECREF(Py_False);
+	}
+
+	if(params.SGD.pocket) {
+		PyDict_SetItemString(SGD, "pocket", Py_True);
+		Py_INCREF(Py_True);
+	} else {
+		PyDict_SetItemString(SGD, "pocket", Py_False);
+		Py_DECREF(Py_False);
+	}
+
+	PyDict_SetItemString(parameters, "SGD", SGD);
+
+	return parameters;
+}
+
 static PyObject* ISA_train(ISAObject* self, PyObject* args, PyObject* kwds) {
 	char* kwlist[] = {"data", "parameters", 0};
 
@@ -181,12 +225,13 @@ static PyObject* ISA_train(ISAObject* self, PyObject* args, PyObject* kwds) {
 
  	Parameters params;
 
+	// read parameters from dictionary
 	if(parameters) {
 		if(!PyDict_Check(parameters)) {
 			PyErr_SetString(PyExc_TypeError, "Parameters should be stored in a dictionary.");
 			return 0;
 		}
- 
+
   		PyObject* trainingMethod = PyDict_GetItemString(parameters, "training_method");
    		if(trainingMethod && PyString_Check(trainingMethod))
   			params.trainingMethod = PyString_AsString(trainingMethod);
@@ -201,9 +246,29 @@ static PyObject* ISA_train(ISAObject* self, PyObject* args, PyObject* kwds) {
 
   		PyObject* SGD = PyDict_GetItemString(parameters, "sgd");
   		if(SGD && PyDict_Check(SGD)) {
- 			PyObject* maxIter = PyDict_GetItemString(parameters, "max_iter");
+ 			PyObject* maxIter = PyDict_GetItemString(SGD, "max_iter");
  			if(maxIter && PyInt_Check(maxIter))
  				params.SGD.maxIter = PyInt_AsLong(maxIter);
+
+ 			PyObject* batchSize = PyDict_GetItemString(SGD, "batch_size");
+ 			if(batchSize && PyInt_Check(batchSize))
+ 				params.SGD.batchSize = PyInt_AsLong(batchSize);
+
+ 			PyObject* stepWidth = PyDict_GetItemString(SGD, "step_width");
+ 			if(stepWidth && PyFloat_Check(stepWidth))
+ 				params.SGD.stepWidth = PyFloat_AsDouble(stepWidth);
+
+ 			PyObject* momentum = PyDict_GetItemString(SGD, "momentum");
+ 			if(momentum && PyFloat_Check(momentum))
+ 				params.SGD.momentum = PyFloat_AsDouble(momentum);
+
+			PyObject* shuffle = PyDict_GetItemString(SGD, "shuffle");
+			if(shuffle && PyBool_Check(shuffle))
+				params.SGD.shuffle = (shuffle == Py_True);
+
+			PyObject* pocket = PyDict_GetItemString(SGD, "pocket");
+			if(shuffle && PyBool_Check(pocket))
+				params.SGD.pocket = (pocket == Py_True);
  		}
 	}
 
@@ -232,6 +297,7 @@ static PyGetSetDef ISA_getset[] = {
 
 
 static PyMethodDef ISA_methods[] = {
+	{"default_parameters", (PyCFunction)ISA_default_parameters, METH_NOARGS, 0},
 	{"train", (PyCFunction)ISA_train, METH_KEYWORDS, 0},
 	{0}
 };
