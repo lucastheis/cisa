@@ -8,7 +8,8 @@ modules = [
 		language='c++',
 		sources=[
 			'code/isa/src/module.cpp',
-			'code/isa/src/isa.cpp'],
+			'code/isa/src/isa.cpp',
+			'code/isa/src/gsm.cpp'],
 		include_dirs=[
 			'code',
 			'code/isa/include',

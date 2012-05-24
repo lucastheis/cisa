@@ -3,6 +3,7 @@
 
 #include "isa.h"
 #include "exception.h"
+#include "pyutils.h"
 #include "Eigen/Core"
 #include <iostream>
 
@@ -12,55 +13,6 @@ struct ISAObject {
 	PyObject_HEAD
 	ISA* isa;
 };
-
-
-
-/**
- * Turn an Eigen matrix into a NumPy array.
- */
-static PyObject* PyArray_FromMatrixXd(const MatrixXd& mat) {
-	// matrix dimensionality
-	npy_intp dims[2];
-	dims[0] = mat.rows();
-	dims[1] = mat.cols();
-
-	// allocate PyArray
-	#ifdef EIGEN_DEFAULT_TO_ROW_MAJOR
-	PyObject* array = PyArray_New(&PyArray_Type, 2, dims, NPY_DOUBLE, 0, 0, 0, NPY_C_CONTIGUOUS, 0);
-	#else
-	PyObject* array = PyArray_New(&PyArray_Type, 2, dims, NPY_DOUBLE, 0, 0, 0, NPY_F_CONTIGUOUS, 0);
-	#endif
-
-	// copy data
-	const double* data = mat.data();
-	double* dataCopy = reinterpret_cast<double*>(PyArray_DATA(array));
-
-	for(int i = 0; i < mat.size(); ++i)
-		dataCopy[i] = data[i];
-
-	return array;
-}
-
-
-
-/**
- * Turn a NumPy array into an Eigen matrix.
- */
-static MatrixXd PyArray_ToMatrixXd(PyObject* array) {
- 	if(PyArray_FLAGS(array) & NPY_F_CONTIGUOUS)
- 		return Map<Matrix<double, Dynamic, Dynamic, ColMajor> >(
- 			reinterpret_cast<double*>(PyArray_DATA(array)),
- 			PyArray_DIM(array, 0), 
- 			PyArray_DIM(array, 1));
- 
- 	if(PyArray_FLAGS(array) & NPY_C_CONTIGUOUS) 
- 		return Map<Matrix<double, Dynamic, Dynamic, RowMajor> >(
- 			reinterpret_cast<double*>(PyArray_DATA(array)),
- 			PyArray_DIM(array, 0), 
- 			PyArray_DIM(array, 1));
-
-	throw Exception("Data must be stored in contiguous memory.");
-}
 
 
 
@@ -105,10 +57,10 @@ static int ISA_init(ISAObject* self, PyObject* args, PyObject* kwds) {
  * Delete ISA object.
  */
 static void ISA_dealloc(ISAObject* self) {
-	// free actual ISA instance
+	// delete actual ISA instance
 	delete self->isa;
 
-	// free ISA object
+	// delete ISA object
 	self->ob_type->tp_free(reinterpret_cast<PyObject*>(self));
 }
 
@@ -214,8 +166,8 @@ static PyObject* ISA_train(ISAObject* self, PyObject* args, PyObject* kwds) {
 	PyObject* parameters = 0;
 
 	// read arguments
- 	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &data, &parameters))
- 		return 0;
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &data, &parameters))
+		return 0;
 
 	// make sure data is stored in NumPy array
 	if(!PyArray_Check(data)) {
@@ -223,7 +175,7 @@ static PyObject* ISA_train(ISAObject* self, PyObject* args, PyObject* kwds) {
 		return 0;
 	}
 
- 	Parameters params;
+	Parameters params;
 
 	// read parameters from dictionary
 	if(parameters) {
@@ -232,35 +184,35 @@ static PyObject* ISA_train(ISAObject* self, PyObject* args, PyObject* kwds) {
 			return 0;
 		}
 
-  		PyObject* trainingMethod = PyDict_GetItemString(parameters, "training_method");
-   		if(trainingMethod && PyString_Check(trainingMethod))
-  			params.trainingMethod = PyString_AsString(trainingMethod);
- 
-  		PyObject* samplingMethod = PyDict_GetItemString(parameters, "sampling_method");
-  		if(samplingMethod && PyString_Check(samplingMethod))
- 			params.trainingMethod = PyString_AsString(samplingMethod);
+		PyObject* trainingMethod = PyDict_GetItemString(parameters, "training_method");
+		if(trainingMethod && PyString_Check(trainingMethod))
+			params.trainingMethod = PyString_AsString(trainingMethod);
 
-  		PyObject* adaptive = PyDict_GetItemString(parameters, "adaptive");
-  		if(adaptive && PyBool_Check(adaptive))
- 			params.adaptive = (adaptive == Py_True);
+		PyObject* samplingMethod = PyDict_GetItemString(parameters, "sampling_method");
+		if(samplingMethod && PyString_Check(samplingMethod))
+			params.trainingMethod = PyString_AsString(samplingMethod);
 
-  		PyObject* SGD = PyDict_GetItemString(parameters, "sgd");
-  		if(SGD && PyDict_Check(SGD)) {
- 			PyObject* maxIter = PyDict_GetItemString(SGD, "max_iter");
- 			if(maxIter && PyInt_Check(maxIter))
- 				params.SGD.maxIter = PyInt_AsLong(maxIter);
+		PyObject* adaptive = PyDict_GetItemString(parameters, "adaptive");
+		if(adaptive && PyBool_Check(adaptive))
+			params.adaptive = (adaptive == Py_True);
 
- 			PyObject* batchSize = PyDict_GetItemString(SGD, "batch_size");
- 			if(batchSize && PyInt_Check(batchSize))
- 				params.SGD.batchSize = PyInt_AsLong(batchSize);
+		PyObject* SGD = PyDict_GetItemString(parameters, "sgd");
+		if(SGD && PyDict_Check(SGD)) {
+			PyObject* maxIter = PyDict_GetItemString(SGD, "max_iter");
+			if(maxIter && PyInt_Check(maxIter))
+				params.SGD.maxIter = PyInt_AsLong(maxIter);
 
- 			PyObject* stepWidth = PyDict_GetItemString(SGD, "step_width");
- 			if(stepWidth && PyFloat_Check(stepWidth))
- 				params.SGD.stepWidth = PyFloat_AsDouble(stepWidth);
+			PyObject* batchSize = PyDict_GetItemString(SGD, "batch_size");
+			if(batchSize && PyInt_Check(batchSize))
+				params.SGD.batchSize = PyInt_AsLong(batchSize);
 
- 			PyObject* momentum = PyDict_GetItemString(SGD, "momentum");
- 			if(momentum && PyFloat_Check(momentum))
- 				params.SGD.momentum = PyFloat_AsDouble(momentum);
+			PyObject* stepWidth = PyDict_GetItemString(SGD, "step_width");
+			if(stepWidth && PyFloat_Check(stepWidth))
+				params.SGD.stepWidth = PyFloat_AsDouble(stepWidth);
+
+			PyObject* momentum = PyDict_GetItemString(SGD, "momentum");
+			if(momentum && PyFloat_Check(momentum))
+				params.SGD.momentum = PyFloat_AsDouble(momentum);
 
 			PyObject* shuffle = PyDict_GetItemString(SGD, "shuffle");
 			if(shuffle && PyBool_Check(shuffle))
@@ -269,15 +221,15 @@ static PyObject* ISA_train(ISAObject* self, PyObject* args, PyObject* kwds) {
 			PyObject* pocket = PyDict_GetItemString(SGD, "pocket");
 			if(shuffle && PyBool_Check(pocket))
 				params.SGD.pocket = (pocket == Py_True);
- 		}
+		}
 	}
 
 	try {
 		// fit model to training data
-   		self->isa->train(PyArray_ToMatrixXd(data), params); 
+		self->isa->train(PyArray_ToMatrixXd(data), params);
 
 	} catch(Exception exception) {
- 		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
 	}
 

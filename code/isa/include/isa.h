@@ -4,13 +4,13 @@
 #include "Eigen/Core"
 #include <string>
 
-using Eigen::MatrixXd;
+using namespace Eigen;
 using std::string;
 
 struct Parameters {
- 	string trainingMethod;
- 	string samplingMethod;
- 	bool adaptive;
+	string trainingMethod;
+	string samplingMethod;
+	bool adaptive;
 
 	struct {
 		int maxIter;
@@ -21,19 +21,19 @@ struct Parameters {
 		bool pocket;
 	} SGD;
 
- 	Parameters() {
- 		// default parameters
- 		trainingMethod = "SGD";
- 		samplingMethod = "Gibbs";
- 		adaptive = true;
- 
- 		SGD.maxIter = 1;
- 		SGD.batchSize = 100;
- 		SGD.stepWidth = 0.001;
- 		SGD.momentum = 0.8;
- 		SGD.shuffle = true;
- 		SGD.pocket = true;
- 	}
+	Parameters() {
+		// default parameters
+		trainingMethod = "SGD";
+		samplingMethod = "Gibbs";
+		adaptive = true;
+
+		SGD.maxIter = 1;
+		SGD.batchSize = 100;
+		SGD.stepWidth = 0.001;
+		SGD.momentum = 0.8;
+		SGD.shuffle = true;
+		SGD.pocket = true;
+	}
 };
 
 class ISA {
@@ -47,14 +47,16 @@ class ISA {
 		inline MatrixXd basis();
 		inline void setBasis(const MatrixXd& basis);
 
- 		virtual void train(MatrixXd data, Parameters params = Parameters());
+		virtual void train(const MatrixXd& data, Parameters params = Parameters());
 		virtual MatrixXd trainSGD(
-				MatrixXd data,
-				MatrixXd basis,
-				Parameters params = Parameters());
+			const MatrixXd& data,
+			const MatrixXd& basis,
+			Parameters params = Parameters());
 
 		virtual MatrixXd sample(int num_samples = 1);
 		virtual MatrixXd samplePosterior(const MatrixXd& data);
+
+		virtual MatrixXd priorEnergyGradient(const MatrixXd& states);
 
 	protected:
 		int mNumVisibles;
