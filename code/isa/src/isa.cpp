@@ -25,11 +25,25 @@ ISA::~ISA() {
 
 void ISA::train(const MatrixXd& data, Parameters params) {
 	for(int i = 0; i < params.maxIter; ++i) {
+		// optimize basis
 		bool improved = trainSGD(data, basis(), params);
 
 		if(params.adaptive)
 			params.SGD.stepWidth *= improved ? 1.1 : 0.5;
+
+		// optimize marginal distributions
+		trainPrior(basis().inverse() * data, params);
 	}
+}
+
+
+
+void ISA::trainPrior(const MatrixXd& states, const Parameters params) {
+	// TODO: parallelize
+	for(int from = 0, i = 0; i < numSubspaces(); from += mSubspaces[i].dim(), ++i)
+		mSubspaces[i].train(states.middleRows(from, mSubspaces[i].dim()),
+			params.GSM.maxIter,
+			params.GSM.tol);
 }
 
 
@@ -37,7 +51,7 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 bool ISA::trainSGD(
 	const MatrixXd& complData,
 	const MatrixXd& complBasis,
-	Parameters params)
+	const Parameters params)
 {
 	// filter matrix and momentum
 	MatrixXd W = complBasis.inverse();

@@ -25,6 +25,11 @@ struct Parameters {
 		bool pocket;
 	} SGD;
 
+	struct {
+		int maxIter;
+		double tol;
+	} GSM;
+
 	Parameters() {
 		// default parameters
 		trainingMethod = "SGD";
@@ -38,6 +43,9 @@ struct Parameters {
 		SGD.momentum = 0.8;
 		SGD.shuffle = true;
 		SGD.pocket = true;
+
+		GSM.maxIter = 100;
+		GSM.tol = 1e-8;
 	}
 };
 
@@ -55,10 +63,11 @@ class ISA {
 		inline void setBasis(const MatrixXd& basis);
 
 		virtual void train(const MatrixXd& data, Parameters params = Parameters());
+		virtual void trainPrior(const MatrixXd& states, const Parameters params = Parameters());
 		virtual bool trainSGD(
 			const MatrixXd& complData,
 			const MatrixXd& complBasis,
-			Parameters params = Parameters());
+			const Parameters params = Parameters());
 
 		virtual MatrixXd sample(int numSamples = 1);
 		virtual MatrixXd samplePrior(int numSamples = 1);

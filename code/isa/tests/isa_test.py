@@ -46,7 +46,7 @@ class Tests(unittest.TestCase):
 	def test_prior_energy_gradient(self):
 		isa = ISA(4)
 
-		samples = randn(4, 10)
+		samples = isa.sample_prior(100)
 		grad = isa.prior_energy_gradient(samples)
 
 		# simple sanity checks

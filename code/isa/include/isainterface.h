@@ -119,6 +119,7 @@ static PyObject* ISA_default_parameters(ISAObject* self) {
 	Parameters params;
 	PyObject* parameters = PyDict_New();
 	PyObject* SGD = PyDict_New();
+	PyObject* GSM = PyDict_New();
 
 	PyDict_SetItemString(parameters, "training_method",
 		PyString_FromString(params.trainingMethod.c_str()));
@@ -156,7 +157,11 @@ static PyObject* ISA_default_parameters(ISAObject* self) {
 		Py_DECREF(Py_False);
 	}
 
+	PyDict_SetItemString(GSM, "max_iter", PyInt_FromLong(params.GSM.maxIter));
+	PyDict_SetItemString(GSM, "tol", PyFloat_FromDouble(params.GSM.tol));
+
 	PyDict_SetItemString(parameters, "SGD", SGD);
+	PyDict_SetItemString(parameters, "GSM", GSM);
 
 	return parameters;
 }
@@ -225,8 +230,19 @@ static PyObject* ISA_train(ISAObject* self, PyObject* args, PyObject* kwds) {
 				params.SGD.shuffle = (shuffle == Py_True);
 
 			PyObject* pocket = PyDict_GetItemString(SGD, "pocket");
-			if(shuffle && PyBool_Check(pocket))
+			if(pocket && PyBool_Check(pocket))
 				params.SGD.pocket = (pocket == Py_True);
+		}
+
+		PyObject* GSM = PyDict_GetItemString(parameters, "sgd");
+		if(GSM && PyDict_Check(GSM)) {
+			PyObject* maxIter = PyDict_GetItemString(GSM, "max_iter");
+			if(maxIter && PyInt_Check(maxIter))
+				params.GSM.maxIter = PyInt_AsLong(maxIter);
+
+			PyObject* tol = PyDict_GetItemString(GSM, "tol");
+			if(tol && PyFloat_Check(tol))
+				params.GSM.tol = PyFloat_AsDouble(tol);
 		}
 	}
 
