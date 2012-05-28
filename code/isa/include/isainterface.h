@@ -125,6 +125,8 @@ static PyObject* ISA_default_parameters(ISAObject* self) {
 	PyDict_SetItemString(parameters, "sampling_method",
 		PyString_FromString(params.samplingMethod.c_str()));
 
+	PyDict_SetItemString(parameters, "max_iter", PyInt_FromLong(params.maxIter));
+
 	if(params.adaptive) {
 		PyDict_SetItemString(parameters, "adaptive", Py_True);
 		Py_INCREF(Py_True);
@@ -192,6 +194,10 @@ static PyObject* ISA_train(ISAObject* self, PyObject* args, PyObject* kwds) {
 		if(samplingMethod && PyString_Check(samplingMethod))
 			params.trainingMethod = PyString_AsString(samplingMethod);
 
+		PyObject* maxIter = PyDict_GetItemString(parameters, "max_iter");
+		if(maxIter && PyInt_Check(maxIter))
+			params.maxIter = PyInt_AsLong(maxIter);
+
 		PyObject* adaptive = PyDict_GetItemString(parameters, "adaptive");
 		if(adaptive && PyBool_Check(adaptive))
 			params.adaptive = (adaptive == Py_True);
@@ -239,6 +245,67 @@ static PyObject* ISA_train(ISAObject* self, PyObject* args, PyObject* kwds) {
 
 
 
+static PyObject* ISA_sample(ISAObject* self, PyObject* args, PyObject* kwds) {
+	char* kwlist[] = {"num_samples", 0};
+
+	int num_samples = 1;
+
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &num_samples))
+		return 0;
+
+	try {
+		return PyArray_FromMatrixXd(self->isa->sample(num_samples));
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+}
+
+
+
+static PyObject* ISA_sample_prior(ISAObject* self, PyObject* args, PyObject* kwds) {
+	char* kwlist[] = {"num_samples", 0};
+
+	int num_samples = 1;
+
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &num_samples))
+		return 0;
+
+	try {
+		return PyArray_FromMatrixXd(self->isa->samplePrior(num_samples));
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+}
+
+
+
+static PyObject* ISA_prior_energy_gradient(ISAObject* self, PyObject* args, PyObject* kwds) {
+	char* kwlist[] = {"states", 0};
+
+	PyObject* states;
+
+	// read arguments
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &states))
+		return 0;
+
+	// make sure data is stored in NumPy array
+	if(!PyArray_Check(states)) {
+		PyErr_SetString(PyExc_TypeError, "Hidden states have to be stored in a NumPy array.");
+		return 0;
+	}
+
+	try {
+		return PyArray_FromMatrixXd(self->isa->priorEnergyGradient(PyArray_ToMatrixXd(states)));
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+}
+
+
+
 static PyGetSetDef ISA_getset[] = {
 	{"num_visibles", (getter)ISA_num_visibles, 0, 0},
 	{"num_hiddens", (getter)ISA_num_hiddens, 0, 0},
@@ -251,6 +318,9 @@ static PyGetSetDef ISA_getset[] = {
 static PyMethodDef ISA_methods[] = {
 	{"default_parameters", (PyCFunction)ISA_default_parameters, METH_NOARGS, 0},
 	{"train", (PyCFunction)ISA_train, METH_VARARGS|METH_KEYWORDS, 0},
+	{"sample", (PyCFunction)ISA_sample, METH_VARARGS|METH_KEYWORDS, 0},
+	{"sample_prior", (PyCFunction)ISA_sample_prior, METH_VARARGS|METH_KEYWORDS, 0},
+	{"prior_energy_gradient", (PyCFunction)ISA_prior_energy_gradient, METH_VARARGS|METH_KEYWORDS, 0},
 	{0}
 };
 

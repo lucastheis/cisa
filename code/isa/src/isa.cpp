@@ -3,11 +3,17 @@
 #include <iostream>
 
 ISA::ISA(int numVisibles, int numHiddens, int sSize, int numScales) :
-	mNumVisibles(numVisibles), mNumHiddens(numHiddens) 
+	mNumVisibles(numVisibles), mNumHiddens(numHiddens)
 {
-	if(mNumHiddens < 0)
+	if(mNumHiddens < mNumVisibles)
 		mNumHiddens = mNumVisibles;
 	mBasis = MatrixXd::Random(mNumVisibles, mNumHiddens);
+
+	for(int i = 0; i < mNumHiddens / sSize; ++i)
+		mSubspaces.push_back(GSM(sSize, numScales));
+
+	if(mNumHiddens % sSize)
+		mSubspaces.push_back(GSM(mNumHiddens % sSize, numScales));
 }
 
 
@@ -18,22 +24,28 @@ ISA::~ISA() {
 
 
 void ISA::train(const MatrixXd& data, Parameters params) {
-	trainSGD(data, basis(), params);
+	for(int i = 0; i < params.maxIter; ++i) {
+		bool improved = trainSGD(data, basis(), params);
+
+		if(params.adaptive)
+			params.SGD.stepWidth *= improved ? 1.1 : 0.5;
+	}
 }
 
 
 
-MatrixXd ISA::trainSGD(
-	const MatrixXd& data,
-	const MatrixXd& basis,
+bool ISA::trainSGD(
+	const MatrixXd& complData,
+	const MatrixXd& complBasis,
 	Parameters params)
 {
-	MatrixXd W = basis.inverse();
-	MatrixXd P = MatrixXd::Zero(basis.rows(), basis.cols());
+	// filter matrix and momentum
+	MatrixXd W = complBasis.inverse();
+	MatrixXd P = MatrixXd::Zero(complBasis.rows(), complBasis.cols());
 
 	for(int i = 0; i < params.SGD.maxIter; ++i) {
-		for(int j = 0; j + params.SGD.batchSize <= data.cols(); j += params.SGD.batchSize) {
-			MatrixXd X = data.middleCols(j, params.SGD.batchSize);
+		for(int j = 0; j + params.SGD.batchSize <= complData.cols(); j += params.SGD.batchSize) {
+			MatrixXd X = complData.middleCols(j, params.SGD.batchSize);
 
 			// update momentum with natural gradient
 			P = params.SGD.momentum * P + W
@@ -44,23 +56,46 @@ MatrixXd ISA::trainSGD(
 		}
 	}
 
-	return W.inverse();
+	// update basis
+	setBasis(W.inverse().leftCols(numHiddens()));
+
+	return true;
 }
 
 
 
-MatrixXd ISA::sample(int num_samples) {
-	return MatrixXd::Random(1, 1);
+MatrixXd ISA::sample(int numSamples) {
+	return basis() * samplePrior(numSamples);
+}
+
+
+
+MatrixXd ISA::samplePrior(int numSamples) {
+	MatrixXd samples = MatrixXd::Zero(numHiddens(), numSamples);
+
+	for(int from = 0, i = 0; i < numSubspaces(); from += mSubspaces[i].dim(), ++i)
+		samples.middleRows(from, mSubspaces[i].dim()) =
+			mSubspaces[i].sample(numSamples);
+
+	return samples;
 }
 
 
 
 MatrixXd ISA::samplePosterior(const MatrixXd& data) {
-	return MatrixXd::Random(1, 1);
+	// TODO: implement Gibbs sampling
+	return samplePrior(data.cols());
 }
 
 
 
 MatrixXd ISA::priorEnergyGradient(const MatrixXd& states) {
-	return MatrixXd::Zero(states.rows(), states.cols());
+	MatrixXd gradient = MatrixXd::Zero(states.rows(), states.cols());
+
+	// TODO: parallelize
+	for(int from = 0, i = 0; i < numSubspaces(); from += mSubspaces[i].dim(), ++i)
+		gradient.middleRows(from, mSubspaces[i].dim()) =
+			mSubspaces[i].energyGradient(states.middleRows(from, mSubspaces[i].dim()));
+
+	return gradient;
 }

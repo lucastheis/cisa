@@ -2,14 +2,18 @@
 #define ISA_H
 
 #include "Eigen/Core"
+#include "gsm.h"
 #include <string>
+#include <vector>
 
 using namespace Eigen;
 using std::string;
+using std::vector;
 
 struct Parameters {
 	string trainingMethod;
 	string samplingMethod;
+	int maxIter;
 	bool adaptive;
 
 	struct {
@@ -25,6 +29,7 @@ struct Parameters {
 		// default parameters
 		trainingMethod = "SGD";
 		samplingMethod = "Gibbs";
+		maxIter = 10;
 		adaptive = true;
 
 		SGD.maxIter = 1;
@@ -43,17 +48,20 @@ class ISA {
 
 		inline int numVisibles();
 		inline int numHiddens();
+		inline bool complete();
+		inline int numSubspaces();
 
 		inline MatrixXd basis();
 		inline void setBasis(const MatrixXd& basis);
 
 		virtual void train(const MatrixXd& data, Parameters params = Parameters());
-		virtual MatrixXd trainSGD(
-			const MatrixXd& data,
-			const MatrixXd& basis,
+		virtual bool trainSGD(
+			const MatrixXd& complData,
+			const MatrixXd& complBasis,
 			Parameters params = Parameters());
 
-		virtual MatrixXd sample(int num_samples = 1);
+		virtual MatrixXd sample(int numSamples = 1);
+		virtual MatrixXd samplePrior(int numSamples = 1);
 		virtual MatrixXd samplePosterior(const MatrixXd& data);
 
 		virtual MatrixXd priorEnergyGradient(const MatrixXd& states);
@@ -62,6 +70,7 @@ class ISA {
 		int mNumVisibles;
 		int mNumHiddens;
 		MatrixXd mBasis;
+		vector<GSM> mSubspaces;
 };
 
 
@@ -74,6 +83,18 @@ inline int ISA::numVisibles() {
 
 inline int ISA::numHiddens() {
 	return mNumVisibles;
+}
+
+
+
+inline bool ISA::complete() {
+	return mNumVisibles == mNumHiddens;
+}
+
+
+
+inline int ISA::numSubspaces() {
+	return mSubspaces.size();
 }
 
 
