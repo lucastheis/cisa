@@ -17,25 +17,25 @@ class GSM {
 		inline ArrayXd scales();
 		inline void setScales(MatrixXd scales);
 
-		bool train(const MatrixXd& data, int max_iter = 100, double tol = 1e-5);
+		virtual bool train(const MatrixXd& data, int max_iter = 100, double tol = 1e-5);
 
-		MatrixXd sample(int num_samples = 1);
+		virtual MatrixXd sample(int num_samples = 1);
 
-		Array<double, 1, Dynamic> samplePosterior(const MatrixXd& data);
+		virtual Array<double, 1, Dynamic> samplePosterior(const MatrixXd& data);
 
-		ArrayXXd posterior(const MatrixXd& data);
-		ArrayXXd posterior(const MatrixXd& data, const RowVectorXd& sqNorms);
+		virtual ArrayXXd posterior(const MatrixXd& data);
+		virtual ArrayXXd posterior(const MatrixXd& data, const RowVectorXd& sqNorms);
 
-		ArrayXXd logJoint(const MatrixXd& data);
-		ArrayXXd logJoint(const MatrixXd& data, const RowVectorXd& sqNorms);
+		virtual ArrayXXd logJoint(const MatrixXd& data);
+		virtual ArrayXXd logJoint(const MatrixXd& data, const RowVectorXd& sqNorms);
 
-		Array<double, 1, Dynamic> logLikelihood(const MatrixXd& data);
-		Array<double, 1, Dynamic> logLikelihood(const MatrixXd& data, const RowVectorXd& sqNorms);
+		virtual Array<double, 1, Dynamic> logLikelihood(const MatrixXd& data);
+		virtual Array<double, 1, Dynamic> logLikelihood(const MatrixXd& data, const RowVectorXd& sqNorms);
 
-		Array<double, 1, Dynamic> energy(const MatrixXd& data);
-		Array<double, 1, Dynamic> energy(const MatrixXd& data, const RowVectorXd& sqNorms);
+		virtual Array<double, 1, Dynamic> energy(const MatrixXd& data);
+		virtual Array<double, 1, Dynamic> energy(const MatrixXd& data, const RowVectorXd& sqNorms);
 
-		ArrayXXd energyGradient(const MatrixXd& data);
+		virtual ArrayXXd energyGradient(const MatrixXd& data);
 
 	protected:
 		int mDim;
