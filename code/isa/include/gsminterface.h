@@ -131,15 +131,19 @@ static PyObject* GSM_train(GSMObject* self, PyObject* args, PyObject* kwds) {
 	}
 
 	try {
-		self->gsm->train(PyArray_ToMatrixXd(data), max_iter, tol);
-
+		if(self->gsm->train(PyArray_ToMatrixXd(data), max_iter, tol)) {
+			Py_INCREF(Py_True);
+			return Py_True;
+		} else {
+			Py_INCREF(Py_False);
+			return Py_False;
+		}
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
 	}
 
-	Py_INCREF(Py_None);
-	return Py_None;
+	return 0;
 }
 
 

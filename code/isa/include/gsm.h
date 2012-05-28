@@ -17,7 +17,7 @@ class GSM {
 		inline ArrayXd scales();
 		inline void setScales(MatrixXd scales);
 
-		void train(const MatrixXd& data, int max_iter = 100, double tol = 1e-5);
+		bool train(const MatrixXd& data, int max_iter = 100, double tol = 1e-5);
 
 		MatrixXd sample(int num_samples = 1);
 

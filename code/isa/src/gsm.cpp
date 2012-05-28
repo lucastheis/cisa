@@ -37,11 +37,13 @@ GSM::GSM(int dim, int numScales) : mDim(dim), mNumScales(numScales) {
 
 
 
-void GSM::train(const MatrixXd& data, int max_iter, double tol) {
+bool GSM::train(const MatrixXd& data, int max_iter, double tol) {
 	if(data.rows() != mDim)
 		throw Exception("Data has wrong dimensionality.");
 
 	RowVectorXd sqNorms = data.colwise().squaredNorm();
+
+	double logLik = logLikelihood(data).mean();
 
 	for(int i = 0; i < max_iter; ++i) {
 		// compute unnormalized posterior over mixture components (E)
@@ -50,7 +52,19 @@ void GSM::train(const MatrixXd& data, int max_iter, double tol) {
 		// update parameters (M)
 		mScales = ((post.rowwise() * sqNorms.array()).rowwise().mean()
 			/ (mDim * post.rowwise().mean())).sqrt();
+
+		if(tol > 0. && i % 10 == 0) {
+			double logLikNew = logLikelihood(data).mean();
+
+			// check for convergence
+			if(logLikNew - logLik < tol)
+				return true;
+
+			logLik = logLikNew;
+		}
 	}
+
+	return false;
 }
 
 
