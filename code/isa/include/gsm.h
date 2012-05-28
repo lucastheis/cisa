@@ -14,21 +14,33 @@ class GSM {
 		inline int dim();
 		inline int numScales();
 
-		inline VectorXd scales();
+		inline ArrayXd scales();
 		inline void setScales(MatrixXd scales);
 
 		void train(const MatrixXd& data, int max_iter = 100, double tol = 1e-5);
 
-//		MatrixXd sample(int num_samples = 1);
-//
-//		MatrixXd loglikelihood(MatrixXd& data);
-//		MatrixXd energy(const MatrixXd& data);
-//		MatrixXd energyGradient(const MatrixXd& data);
+		MatrixXd sample(int num_samples = 1);
+
+		Array<double, 1, Dynamic> samplePosterior(const MatrixXd& data);
+
+		ArrayXXd posterior(const MatrixXd& data);
+		ArrayXXd posterior(const MatrixXd& data, const RowVectorXd& sqNorms);
+
+		ArrayXXd logJoint(const MatrixXd& data);
+		ArrayXXd logJoint(const MatrixXd& data, const RowVectorXd& sqNorms);
+
+		Array<double, 1, Dynamic> logLikelihood(const MatrixXd& data);
+		Array<double, 1, Dynamic> logLikelihood(const MatrixXd& data, const RowVectorXd& sqNorms);
+
+		Array<double, 1, Dynamic> energy(const MatrixXd& data);
+		Array<double, 1, Dynamic> energy(const MatrixXd& data, const RowVectorXd& sqNorms);
+
+		ArrayXXd energyGradient(const MatrixXd& data);
 
 	protected:
 		int mDim;
 		int mNumScales;
-		VectorXd mScales;
+		ArrayXd mScales;
 };
 
 
@@ -45,14 +57,14 @@ inline int GSM::numScales() {
 
 
 
-inline VectorXd GSM::scales() {
+inline ArrayXd GSM::scales() {
 	return mScales;
 }
 
 
 
 inline void GSM::setScales(MatrixXd scales) {
-	// turn row vectors into column vectors
+	// turn row vector into column vector
 	if(scales.cols() > scales.rows())
 		scales.transposeInPlace();
 

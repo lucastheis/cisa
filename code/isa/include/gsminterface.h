@@ -114,7 +114,7 @@ static int GSM_set_scales(GSMObject* self, PyObject* value, void*) {
 
 
 static PyObject* GSM_train(GSMObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"data", "max_iter", "tol"};
+	char* kwlist[] = {"data", "max_iter", "tol", 0};
 
 	PyObject* data;
 	int max_iter = 100;
@@ -144,6 +144,149 @@ static PyObject* GSM_train(GSMObject* self, PyObject* args, PyObject* kwds) {
 
 
 
+static PyObject* GSM_posterior(GSMObject* self, PyObject* args, PyObject* kwds) {
+	char* kwlist[] = {"data", 0};
+
+	PyObject* data;
+
+	// read arguments
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &data))
+		return 0;
+
+	// make sure data is stored in NumPy array
+	if(!PyArray_Check(data)) {
+		PyErr_SetString(PyExc_TypeError, "Data has to be stored in a NumPy array.");
+		return 0;
+	}
+
+	try {
+		return PyArray_FromMatrixXd(self->gsm->posterior(PyArray_ToMatrixXd(data)));
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+}
+
+
+
+static PyObject* GSM_sample(GSMObject* self, PyObject* args, PyObject* kwds) {
+	char* kwlist[] = {"num_samples", 0};
+
+	int num_samples = 1;
+
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &num_samples))
+		return 0;
+
+	try {
+		return PyArray_FromMatrixXd(self->gsm->sample(num_samples));
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+}
+
+
+
+static PyObject* GSM_sample_posterior(GSMObject* self, PyObject* args, PyObject* kwds) {
+	char* kwlist[] = {"data", 0};
+
+	PyObject* data;
+
+	// read arguments
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &data))
+		return 0;
+
+	// make sure data is stored in NumPy array
+	if(!PyArray_Check(data)) {
+		PyErr_SetString(PyExc_TypeError, "Data has to be stored in a NumPy array.");
+		return 0;
+	}
+
+	try {
+		return PyArray_FromMatrixXd(self->gsm->samplePosterior(PyArray_ToMatrixXd(data)));
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+}
+
+
+
+static PyObject* GSM_loglikelihood(GSMObject* self, PyObject* args, PyObject* kwds) {
+	char* kwlist[] = {"data", 0};
+
+	PyObject* data;
+
+	// read arguments
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &data))
+		return 0;
+
+	// make sure data is stored in NumPy array
+	if(!PyArray_Check(data)) {
+		PyErr_SetString(PyExc_TypeError, "Data has to be stored in a NumPy array.");
+		return 0;
+	}
+
+	try {
+		return PyArray_FromMatrixXd(self->gsm->logLikelihood(PyArray_ToMatrixXd(data)));
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+}
+
+
+
+static PyObject* GSM_energy(GSMObject* self, PyObject* args, PyObject* kwds) {
+	char* kwlist[] = {"data", 0};
+
+	PyObject* data;
+
+	// read arguments
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &data))
+		return 0;
+
+	// make sure data is stored in NumPy array
+	if(!PyArray_Check(data)) {
+		PyErr_SetString(PyExc_TypeError, "Data has to be stored in a NumPy array.");
+		return 0;
+	}
+
+	try {
+		return PyArray_FromMatrixXd(self->gsm->energy(PyArray_ToMatrixXd(data)));
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+}
+
+
+
+static PyObject* GSM_energy_gradient(GSMObject* self, PyObject* args, PyObject* kwds) {
+	char* kwlist[] = {"data", 0};
+
+	PyObject* data;
+
+	// read arguments
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &data))
+		return 0;
+
+	// make sure data is stored in NumPy array
+	if(!PyArray_Check(data)) {
+		PyErr_SetString(PyExc_TypeError, "Data has to be stored in a NumPy array.");
+		return 0;
+	}
+
+	try {
+		return PyArray_FromMatrixXd(self->gsm->energyGradient(PyArray_ToMatrixXd(data)));
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+}
+
+
+
 static PyGetSetDef GSM_getset[] = {
 	{"dim", (getter)GSM_dim, 0, 0},
 	{"num_scales", (getter)GSM_num_scales, 0, 0},
@@ -154,7 +297,13 @@ static PyGetSetDef GSM_getset[] = {
 
 
 static PyMethodDef GSM_methods[] = {
-	{"train", (PyCFunction)GSM_train, METH_KEYWORDS, 0},
+	{"train", (PyCFunction)GSM_train, METH_VARARGS|METH_KEYWORDS, 0},
+	{"posterior", (PyCFunction)GSM_posterior, METH_VARARGS|METH_KEYWORDS, 0},
+	{"sample", (PyCFunction)GSM_sample, METH_VARARGS|METH_KEYWORDS, 0},
+	{"sample_posterior", (PyCFunction)GSM_sample_posterior, METH_VARARGS|METH_KEYWORDS, 0},
+	{"loglikelihood", (PyCFunction)GSM_loglikelihood, METH_VARARGS|METH_KEYWORDS, 0},
+	{"energy", (PyCFunction)GSM_energy, METH_VARARGS|METH_KEYWORDS, 0},
+	{"energy_gradient", (PyCFunction)GSM_energy_gradient, METH_VARARGS|METH_KEYWORDS, 0},
 	{0}
 };
 

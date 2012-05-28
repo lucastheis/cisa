@@ -250,7 +250,7 @@ static PyGetSetDef ISA_getset[] = {
 
 static PyMethodDef ISA_methods[] = {
 	{"default_parameters", (PyCFunction)ISA_default_parameters, METH_NOARGS, 0},
-	{"train", (PyCFunction)ISA_train, METH_KEYWORDS, 0},
+	{"train", (PyCFunction)ISA_train, METH_VARARGS|METH_KEYWORDS, 0},
 	{0}
 };
 
