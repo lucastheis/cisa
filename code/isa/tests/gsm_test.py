@@ -71,9 +71,8 @@ class Tests(unittest.TestCase):
 		f = lambda x: gsm.energy(x.reshape(-1, 1)).flatten()
 		df = lambda x: gsm.energy_gradient(x.reshape(-1, 1)).flatten()
 
-		for i in range(100):
-			sample = gsm.sample(1).flatten()
-			relative_error = check_grad(f, df, sample) / sqrt(sum(square(df(sample))))
+		for i in range(samples.shape[1]):
+			relative_error = check_grad(f, df, samples[:, i]) / sqrt(sum(square(df(samples[:, i]))))
 
 			# comparison with numerical gradient
 			self.assertLess(relative_error, 0.001)

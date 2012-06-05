@@ -366,6 +366,30 @@ static PyObject* ISA_sample_prior(ISAObject* self, PyObject* args, PyObject* kwd
 
 
 
+static PyObject* ISA_prior_energy(ISAObject* self, PyObject* args, PyObject* kwds) {
+	char* kwlist[] = {"states", 0};
+
+	PyObject* states;
+
+	// read arguments
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &states))
+		return 0;
+
+	// make sure data is stored in NumPy array
+	if(!PyArray_Check(states)) {
+		PyErr_SetString(PyExc_TypeError, "Hidden states have to be stored in a NumPy array.");
+		return 0;
+	}
+
+	try {
+		return PyArray_FromMatrixXd(self->isa->priorEnergy(PyArray_ToMatrixXd(states)));
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+}
+
+
 static PyObject* ISA_prior_energy_gradient(ISAObject* self, PyObject* args, PyObject* kwds) {
 	char* kwlist[] = {"states", 0};
 
@@ -391,6 +415,31 @@ static PyObject* ISA_prior_energy_gradient(ISAObject* self, PyObject* args, PyOb
 
 
 
+static PyObject* ISA_loglikelihood(ISAObject* self, PyObject* args, PyObject* kwds) {
+	char* kwlist[] = {"data", 0};
+
+	PyObject* data;
+
+	// read arguments
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &data))
+		return 0;
+
+	// make sure data is stored in NumPy array
+	if(!PyArray_Check(data)) {
+		PyErr_SetString(PyExc_TypeError, "Data has to be stored in a NumPy array.");
+		return 0;
+	}
+
+	try {
+		return PyArray_FromMatrixXd(self->isa->logLikelihood(PyArray_ToMatrixXd(data)));
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+}
+
+
+
 static PyGetSetDef ISA_getset[] = {
 	{"dim", (getter)ISA_dim, 0, 0},
 	{"num_visibles", (getter)ISA_num_visibles, 0, 0},
@@ -406,7 +455,9 @@ static PyMethodDef ISA_methods[] = {
 	{"train", (PyCFunction)ISA_train, METH_VARARGS|METH_KEYWORDS, 0},
 	{"sample", (PyCFunction)ISA_sample, METH_VARARGS|METH_KEYWORDS, 0},
 	{"sample_prior", (PyCFunction)ISA_sample_prior, METH_VARARGS|METH_KEYWORDS, 0},
+	{"prior_energy", (PyCFunction)ISA_prior_energy, METH_VARARGS|METH_KEYWORDS, 0},
 	{"prior_energy_gradient", (PyCFunction)ISA_prior_energy_gradient, METH_VARARGS|METH_KEYWORDS, 0},
+	{"loglikelihood", (PyCFunction)ISA_loglikelihood, METH_VARARGS|METH_KEYWORDS, 0},
 	{0}
 };
 

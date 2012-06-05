@@ -83,7 +83,10 @@ class ISA {
 		virtual MatrixXd samplePrior(int numSamples = 1);
 		virtual MatrixXd samplePosterior(const MatrixXd& data);
 
+		virtual MatrixXd priorEnergy(const MatrixXd& states);
 		virtual MatrixXd priorEnergyGradient(const MatrixXd& states);
+
+		virtual MatrixXd logLikelihood(const MatrixXd& data);
 
 	protected:
 		int mNumVisibles;

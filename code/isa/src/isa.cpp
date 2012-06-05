@@ -112,6 +112,19 @@ MatrixXd ISA::samplePosterior(const MatrixXd& data) {
 
 
 
+MatrixXd ISA::priorEnergy(const MatrixXd& states) {
+	MatrixXd energy = MatrixXd::Zero(states.rows(), states.cols());
+
+	// TODO: parallelize
+	for(int from = 0, i = 0; i < numSubspaces(); from += mSubspaces[i].dim(), ++i)
+		energy.middleRows(from, mSubspaces[i].dim()) =
+			mSubspaces[i].energy(states.middleRows(from, mSubspaces[i].dim()));
+
+	return energy.colwise().sum();
+}
+
+
+
 MatrixXd ISA::priorEnergyGradient(const MatrixXd& states) {
 	MatrixXd gradient = MatrixXd::Zero(states.rows(), states.cols());
 
@@ -121,4 +134,24 @@ MatrixXd ISA::priorEnergyGradient(const MatrixXd& states) {
 			mSubspaces[i].energyGradient(states.middleRows(from, mSubspaces[i].dim()));
 
 	return gradient;
+}
+
+
+
+MatrixXd ISA::logLikelihood(const MatrixXd& data) {
+	// LU decomposition
+	PartialPivLU<MatrixXd> basisLU(mBasis);
+
+	// compute log-determinant of basis
+	double logDet = basisLU.matrixLU().diagonal().array().abs().log().sum();
+
+	MatrixXd states = basisLU.solve(data);
+	MatrixXd logLik = MatrixXd::Zero(states.rows(), states.cols());
+
+	// TODO: parallelize
+	for(int from = 0, i = 0; i < numSubspaces(); from += mSubspaces[i].dim(), ++i)
+		logLik.middleRows(from, mSubspaces[i].dim()) =
+			mSubspaces[i].logLikelihood(states.middleRows(from, mSubspaces[i].dim()));
+
+	return logLik.colwise().sum().array() - logDet;
 }

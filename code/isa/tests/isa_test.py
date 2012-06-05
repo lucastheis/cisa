@@ -5,7 +5,10 @@ sys.path.append('./code')
 sys.path.append('./build/lib.macosx-10.6-intel-2.7')
 
 from isa import ISA
+from numpy import sqrt, sum, square, dot, var
+from numpy.linalg import inv
 from numpy.random import randn
+from scipy.optimize import check_grad
 
 class Tests(unittest.TestCase):
 	def test_default_parameters(self):
@@ -53,6 +56,27 @@ class Tests(unittest.TestCase):
 		self.assertEqual(grad.shape[0], samples.shape[0])
 		self.assertEqual(grad.shape[1], samples.shape[1])
 
+		f = lambda x: isa.prior_energy(x.reshape(-1, 1)).flatten()
+		df = lambda x: isa.prior_energy_gradient(x.reshape(-1, 1)).flatten()
+
+		for i in range(samples.shape[1]):
+			relative_error = check_grad(f, df, samples[:, i]) / sqrt(sum(square(df(samples[:, i]))))
+
+			# comparison with numerical gradient
+			self.assertLess(relative_error, 0.001)
+
+
+
+	def test_loglikelihood(self):
+		isa = ISA(7)
+
+		samples = isa.sample(100)
+
+		energy = isa.prior_energy(dot(inv(isa.A), samples))
+		loglik = isa.loglikelihood(samples)
+
+		# difference between loglik and -energy should be const
+		self.assertTrue(var(loglik + energy) < 1e-10)
 
 
 	def test_callback(self):
