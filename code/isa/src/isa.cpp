@@ -7,7 +7,7 @@ ISA::ISA(int numVisibles, int numHiddens, int sSize, int numScales) :
 {
 	if(mNumHiddens < mNumVisibles)
 		mNumHiddens = mNumVisibles;
-	mBasis = MatrixXd::Random(mNumVisibles, mNumHiddens);
+	mBasis = ArrayXXd::Random(mNumVisibles, mNumHiddens) / 10.;
 
 	for(int i = 0; i < mNumHiddens / sSize; ++i)
 		mSubspaces.push_back(GSM(sSize, numScales));
@@ -62,9 +62,16 @@ bool ISA::trainSGD(
 	const MatrixXd& complBasis,
 	const Parameters params)
 {
+	// LU decomposition
+	PartialPivLU<MatrixXd> basisLU(complBasis);
+
 	// filter matrix and momentum
-	MatrixXd W = complBasis.inverse();
+	MatrixXd W = basisLU.inverse();
 	MatrixXd P = MatrixXd::Zero(complBasis.rows(), complBasis.cols());
+
+	// compute value of lower bound
+	double logDet = basisLU.matrixLU().diagonal().array().abs().log().sum();
+	double energy = priorEnergy(W * complData).array().mean() + logDet;
 
 	for(int i = 0; i < params.SGD.maxIter; ++i) {
 		for(int j = 0; j + params.SGD.batchSize <= complData.cols(); j += params.SGD.batchSize) {
@@ -79,10 +86,21 @@ bool ISA::trainSGD(
 		}
 	}
 
-	// update basis
-	setBasis(W.inverse().leftCols(numHiddens()));
+	// compute LU decomposition from filter matrix
+	PartialPivLU<MatrixXd> filterLU(W);
 
-	return true;
+	// compute new value of lower bound
+	double logDetNew = filterLU.matrixLU().diagonal().array().abs().log().sum();
+	double energyNew = priorEnergy(W * complData).array().mean() - logDetNew;
+
+	if(params.SGD.pocket && energy < energyNew)
+		// don't update basis
+		return false;
+
+	// update basis
+	setBasis(filterLU.inverse().leftCols(numHiddens()));
+
+	return energyNew < energy;
 }
 
 
