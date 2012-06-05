@@ -16,6 +16,58 @@ struct ISAObject {
 
 
 
+class CallbackTrain : public Callback {
+	public:
+		CallbackTrain(ISAObject* isa, PyObject* callback);
+		virtual ~CallbackTrain();
+		virtual bool operator()(int iter, const ISA&);
+
+	private:
+		ISAObject* mIsa;
+		PyObject* mCallback;
+};
+
+
+
+CallbackTrain::CallbackTrain(ISAObject* isa, PyObject* callback) : 
+	mIsa(isa), 
+	mCallback(callback) 
+{
+	Py_INCREF(mIsa);
+	Py_INCREF(mCallback);
+}
+
+
+
+CallbackTrain::~CallbackTrain() {
+	Py_DECREF(mIsa);
+	Py_DECREF(mCallback);
+}
+
+
+
+bool CallbackTrain::operator()(int iter, const ISA&) {
+	// call Python object
+	PyObject* args = Py_BuildValue("(iO)", iter, mIsa);
+	PyObject* result = PyObject_CallObject(mCallback, args);
+
+	Py_DECREF(args);
+
+	// if cont is false, training will be aborted
+	bool cont = true;
+	if(result) {
+		if(PyBool_Check(result))
+			cont = (result == Py_True);
+		Py_DECREF(result);
+	} else {
+		throw Exception("Some error occured during callback().");
+	}
+
+	return cont;
+}
+
+
+
 /**
  * Create a new ISA object.
  */
@@ -62,6 +114,15 @@ static void ISA_dealloc(ISAObject* self) {
 
 	// delete ISA object
 	self->ob_type->tp_free(reinterpret_cast<PyObject*>(self));
+}
+
+
+
+/**
+ * Return number of visible units.
+ */
+static PyObject* ISA_dim(ISAObject* self, PyObject*, void*) {
+	return PyInt_FromLong(self->isa->numVisibles());
 }
 
 
@@ -127,6 +188,8 @@ static PyObject* ISA_default_parameters(ISAObject* self) {
 		PyString_FromString(params.samplingMethod.c_str()));
 
 	PyDict_SetItemString(parameters, "max_iter", PyInt_FromLong(params.maxIter));
+	PyDict_SetItemString(parameters, "callback", Py_None);
+	Py_INCREF(Py_None);
 
 	if(params.adaptive) {
 		PyDict_SetItemString(parameters, "adaptive", Py_True);
@@ -207,6 +270,10 @@ static PyObject* ISA_train(ISAObject* self, PyObject* args, PyObject* kwds) {
 		if(adaptive && PyBool_Check(adaptive))
 			params.adaptive = (adaptive == Py_True);
 
+		PyObject* callback = PyDict_GetItemString(parameters, "callback");
+		if(callback && PyCallable_Check(callback))
+			params.callback = new CallbackTrain(self, callback);
+
 		PyObject* SGD = PyDict_GetItemString(parameters, "sgd");
 		if(SGD && PyDict_Check(SGD)) {
 			PyObject* maxIter = PyDict_GetItemString(SGD, "max_iter");
@@ -249,11 +316,13 @@ static PyObject* ISA_train(ISAObject* self, PyObject* args, PyObject* kwds) {
 	try {
 		// fit model to training data
 		self->isa->train(PyArray_ToMatrixXd(data), params);
-
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
 	}
+
+	if(params.callback)
+		delete params.callback;
 
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -323,6 +392,7 @@ static PyObject* ISA_prior_energy_gradient(ISAObject* self, PyObject* args, PyOb
 
 
 static PyGetSetDef ISA_getset[] = {
+	{"dim", (getter)ISA_dim, 0, 0},
 	{"num_visibles", (getter)ISA_num_visibles, 0, 0},
 	{"num_hiddens", (getter)ISA_num_hiddens, 0, 0},
 	{"A", (getter)ISA_A, (setter)ISA_set_A, 0},

@@ -10,11 +10,20 @@ using namespace Eigen;
 using std::string;
 using std::vector;
 
+class ISA;
+
+class Callback {
+	public:
+		virtual ~Callback() { }
+		virtual bool operator()(int iter, const ISA& isa) = 0;
+};
+
 struct Parameters {
 	string trainingMethod;
 	string samplingMethod;
 	int maxIter;
 	bool adaptive;
+	Callback* callback;
 
 	struct {
 		int maxIter;
@@ -36,6 +45,7 @@ struct Parameters {
 		samplingMethod = "Gibbs";
 		maxIter = 10;
 		adaptive = true;
+		callback = 0;
 
 		SGD.maxIter = 1;
 		SGD.batchSize = 100;

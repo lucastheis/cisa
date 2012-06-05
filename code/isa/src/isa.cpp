@@ -24,6 +24,11 @@ ISA::~ISA() {
 
 
 void ISA::train(const MatrixXd& data, Parameters params) {
+	if(params.callback)
+		// call callback function once before training
+		if(!(*params.callback)(0, *this))
+			return;
+
 	for(int i = 0; i < params.maxIter; ++i) {
 		// optimize basis
 		bool improved = trainSGD(data, basis(), params);
@@ -33,6 +38,10 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 
 		// optimize marginal distributions
 		trainPrior(basis().inverse() * data, params);
+
+		if(params.callback)
+			if(!(*params.callback)(i + 1, *this))
+				break;
 	}
 }
 
