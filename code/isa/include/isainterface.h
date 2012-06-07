@@ -46,6 +46,139 @@ CallbackTrain::~CallbackTrain() {
 
 
 
+/**
+ * Extract parameters from Python object.
+ */
+Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
+	Parameters params;
+
+	// read parameters from dictionary
+	if(parameters) {
+		if(!PyDict_Check(parameters))
+			throw Exception("Parameters should be stored in a dictionary.");
+
+		PyObject* trainingMethod = PyDict_GetItemString(parameters, "training_method");
+		if(trainingMethod)
+			if(PyString_Check(trainingMethod))
+				params.trainingMethod = PyString_AsString(trainingMethod);
+			else
+				throw Exception("training_method should be of type string.");
+
+		PyObject* samplingMethod = PyDict_GetItemString(parameters, "sampling_method");
+		if(samplingMethod)
+			if(PyString_Check(samplingMethod))
+				params.trainingMethod = PyString_AsString(samplingMethod);
+			else
+				throw Exception("sampling_method should be of type string.");
+
+		PyObject* maxIter = PyDict_GetItemString(parameters, "max_iter");
+		if(maxIter)
+			if(PyInt_Check(maxIter))
+				params.maxIter = PyInt_AsLong(maxIter);
+			else if(PyFloat_Check(maxIter))
+				params.maxIter = static_cast<int>(PyFloat_AsDouble(maxIter));
+			else
+				throw Exception("max_iter should be of type int.");
+
+		PyObject* adaptive = PyDict_GetItemString(parameters, "adaptive");
+		if(adaptive)
+			if(PyBool_Check(adaptive))
+				params.adaptive = (adaptive == Py_True);
+			else
+				throw Exception("adaptive should be of type bool.");
+
+		PyObject* callback = PyDict_GetItemString(parameters, "callback");
+		if(callback && PyCallable_Check(callback))
+			params.callback = new CallbackTrain(self, callback);
+
+		PyObject* SGD = PyDict_GetItemString(parameters, "SGD");
+
+		if(!SGD)
+			SGD = PyDict_GetItemString(parameters, "sgd");
+
+		if(SGD && PyDict_Check(SGD)) {
+			PyObject* maxIter = PyDict_GetItemString(SGD, "max_iter");
+			if(maxIter)
+				if(PyInt_Check(maxIter))
+					params.SGD.maxIter = PyInt_AsLong(maxIter);
+				else if(PyFloat_Check(maxIter))
+					params.SGD.maxIter = static_cast<int>(PyFloat_AsDouble(maxIter));
+				else
+					throw Exception("SGD.max_iter should be of type int.");
+
+			PyObject* batchSize = PyDict_GetItemString(SGD, "batch_size");
+			if(batchSize)
+				if(PyInt_Check(batchSize))
+					params.SGD.batchSize = PyInt_AsLong(batchSize);
+				else if(PyFloat_Check(batchSize))
+					params.SGD.batchSize = static_cast<int>(PyFloat_AsDouble(batchSize));
+				else
+					throw Exception("SGD.batch_size should be of type int.");
+
+			PyObject* stepWidth = PyDict_GetItemString(SGD, "step_width");
+			if(stepWidth)
+				if(PyFloat_Check(stepWidth))
+					params.SGD.stepWidth = PyFloat_AsDouble(stepWidth);
+				else if(PyInt_Check(stepWidth))
+					params.SGD.stepWidth = static_cast<double>(PyFloat_AsDouble(stepWidth));
+				else
+					throw Exception("SGD.step_width should be of type float.");
+
+			PyObject* momentum = PyDict_GetItemString(SGD, "momentum");
+			if(momentum)
+				if(PyFloat_Check(momentum))
+					params.SGD.momentum = PyFloat_AsDouble(momentum);
+				else if(PyInt_Check(momentum))
+					params.SGD.momentum = static_cast<double>(PyInt_AsLong(momentum));
+				else
+					throw Exception("SGD.momentum should be of type float.");
+
+			PyObject* shuffle = PyDict_GetItemString(SGD, "shuffle");
+			if(shuffle)
+				if(PyBool_Check(shuffle))
+					params.SGD.shuffle = (shuffle == Py_True);
+				else
+					throw Exception("SGD.shuffle should be of type bool.");
+
+			PyObject* pocket = PyDict_GetItemString(SGD, "pocket");
+			if(pocket)
+				if(PyBool_Check(pocket))
+					params.SGD.pocket = (pocket == Py_True);
+				else
+					throw Exception("SGD.pocket should be of type bool.");
+		}
+
+		PyObject* GSM = PyDict_GetItemString(parameters, "GSM");
+
+		if(!GSM)
+			GSM = PyDict_GetItemString(parameters, "gsm");
+
+		if(GSM && PyDict_Check(GSM)) {
+			PyObject* maxIter = PyDict_GetItemString(GSM, "max_iter");
+			if(maxIter)
+				if(PyInt_Check(maxIter))
+					params.GSM.maxIter = PyInt_AsLong(maxIter);
+				else if(PyFloat_Check(maxIter))
+					params.GSM.maxIter = static_cast<int>(PyFloat_AsDouble(maxIter));
+				else
+					throw Exception("GSM.max_iter should be of type int.");
+
+			PyObject* tol = PyDict_GetItemString(GSM, "tol");
+			if(tol)
+				if(PyFloat_Check(tol))
+					params.GSM.tol = PyFloat_AsDouble(tol);
+				else if(PyInt_Check(tol))
+					params.GSM.tol = static_cast<double>(PyInt_AsLong(tol));
+				else
+					throw Exception("GSM.tol should be of type float.");
+		}
+	}
+
+	return params;
+}
+
+
+
 bool CallbackTrain::operator()(int iter, const ISA&) {
 	// call Python object
 	PyObject* args = Py_BuildValue("(iO)", iter, mIsa);
@@ -275,84 +408,18 @@ static PyObject* ISA_train(ISAObject* self, PyObject* args, PyObject* kwds) {
 		return 0;
 	}
 
-	Parameters params;
-
-	// read parameters from dictionary
-	if(parameters) {
-		if(!PyDict_Check(parameters)) {
-			PyErr_SetString(PyExc_TypeError, "Parameters should be stored in a dictionary.");
-			return 0;
-		}
-
-		PyObject* trainingMethod = PyDict_GetItemString(parameters, "training_method");
-		if(trainingMethod && PyString_Check(trainingMethod))
-			params.trainingMethod = PyString_AsString(trainingMethod);
-
-		PyObject* samplingMethod = PyDict_GetItemString(parameters, "sampling_method");
-		if(samplingMethod && PyString_Check(samplingMethod))
-			params.trainingMethod = PyString_AsString(samplingMethod);
-
-		PyObject* maxIter = PyDict_GetItemString(parameters, "max_iter");
-		if(maxIter && PyInt_Check(maxIter))
-			params.maxIter = PyInt_AsLong(maxIter);
-
-		PyObject* adaptive = PyDict_GetItemString(parameters, "adaptive");
-		if(adaptive && PyBool_Check(adaptive))
-			params.adaptive = (adaptive == Py_True);
-
-		PyObject* callback = PyDict_GetItemString(parameters, "callback");
-		if(callback && PyCallable_Check(callback))
-			params.callback = new CallbackTrain(self, callback);
-
-		PyObject* SGD = PyDict_GetItemString(parameters, "sgd");
-		if(SGD && PyDict_Check(SGD)) {
-			PyObject* maxIter = PyDict_GetItemString(SGD, "max_iter");
-			if(maxIter && PyInt_Check(maxIter))
-				params.SGD.maxIter = PyInt_AsLong(maxIter);
-
-			PyObject* batchSize = PyDict_GetItemString(SGD, "batch_size");
-			if(batchSize && PyInt_Check(batchSize))
-				params.SGD.batchSize = PyInt_AsLong(batchSize);
-
-			PyObject* stepWidth = PyDict_GetItemString(SGD, "step_width");
-			if(stepWidth && PyFloat_Check(stepWidth))
-				params.SGD.stepWidth = PyFloat_AsDouble(stepWidth);
-
-			PyObject* momentum = PyDict_GetItemString(SGD, "momentum");
-			if(momentum && PyFloat_Check(momentum))
-				params.SGD.momentum = PyFloat_AsDouble(momentum);
-
-			PyObject* shuffle = PyDict_GetItemString(SGD, "shuffle");
-			if(shuffle && PyBool_Check(shuffle))
-				params.SGD.shuffle = (shuffle == Py_True);
-
-			PyObject* pocket = PyDict_GetItemString(SGD, "pocket");
-			if(pocket && PyBool_Check(pocket))
-				params.SGD.pocket = (pocket == Py_True);
-		}
-
-		PyObject* GSM = PyDict_GetItemString(parameters, "sgd");
-		if(GSM && PyDict_Check(GSM)) {
-			PyObject* maxIter = PyDict_GetItemString(GSM, "max_iter");
-			if(maxIter && PyInt_Check(maxIter))
-				params.GSM.maxIter = PyInt_AsLong(maxIter);
-
-			PyObject* tol = PyDict_GetItemString(GSM, "tol");
-			if(tol && PyFloat_Check(tol))
-				params.GSM.tol = PyFloat_AsDouble(tol);
-		}
-	}
-
 	try {
+		Parameters params = PyObject_ToParameters(self, parameters);
+			
 		// fit model to training data
 		self->isa->train(PyArray_ToMatrixXd(data), params);
+
+		if(params.callback)
+			delete params.callback;
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
 	}
-
-	if(params.callback)
-		delete params.callback;
 
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -481,7 +548,7 @@ static PyGetSetDef ISA_getset[] = {
 
 
 static PyMethodDef ISA_methods[] = {
-	{"default_parameters", (PyCFunction)ISA_default_parameters, METH_NOARGS, 0},
+	{"default_parameters", (PyCFunction)ISA_default_parameters, METH_VARARGS, 0},
 	{"initialize", (PyCFunction)ISA_initialize, METH_VARARGS|METH_KEYWORDS, 0},
 	{"train", (PyCFunction)ISA_train, METH_VARARGS|METH_KEYWORDS, 0},
 	{"sample", (PyCFunction)ISA_sample, METH_VARARGS|METH_KEYWORDS, 0},

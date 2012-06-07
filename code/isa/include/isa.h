@@ -72,6 +72,7 @@ class ISA {
 		inline MatrixXd basis();
 		inline void setBasis(const MatrixXd& basis);
 
+		virtual void initialize();
 		virtual void initialize(const MatrixXd& data);
 
 		virtual void train(const MatrixXd& data, Parameters params = Parameters());

@@ -66,6 +66,12 @@ ISA::~ISA() {
 
 
 
+void ISA::initialize() {
+	MatrixXd::
+}
+
+
+
 void ISA::initialize(const MatrixXd& data) {
 	// whiten data
 	SelfAdjointEigenSolver<MatrixXd> eigenSolver1(covariance(data));
