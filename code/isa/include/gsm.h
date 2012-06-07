@@ -17,9 +17,9 @@ class GSM {
 		inline ArrayXd scales();
 		inline void setScales(MatrixXd scales);
 
-		virtual bool train(const MatrixXd& data, int max_iter = 100, double tol = 1e-5);
+		virtual bool train(const MatrixXd& data, int maxIter = 100, double tol = 1e-5);
 
-		virtual MatrixXd sample(int num_samples = 1);
+		virtual MatrixXd sample(int numSamples = 1);
 
 		virtual Array<double, 1, Dynamic> samplePosterior(const MatrixXd& data);
 

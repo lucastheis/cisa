@@ -23,6 +23,7 @@ struct Parameters {
 	string samplingMethod;
 	int maxIter;
 	bool adaptive;
+	bool trainPrior;
 	Callback* callback;
 
 	struct {
@@ -45,6 +46,7 @@ struct Parameters {
 		samplingMethod = "Gibbs";
 		maxIter = 10;
 		adaptive = true;
+		trainPrior = true;
 		callback = 0;
 
 		SGD.maxIter = 1;

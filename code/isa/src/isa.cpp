@@ -4,12 +4,16 @@
 #include <iostream>
 #include <algorithm>
 #include <cstdlib>
+#include <cmath>
 #include <functional>
 
 using std::pair;
 using std::sort;
 using std::rand;
 using std::greater;
+using std::sqrt;
+
+#define PI 3.141592653589793
 
 VectorXi argsort(const VectorXd& data) {
 	// create pairs of values and indices
@@ -67,7 +71,28 @@ ISA::~ISA() {
 
 
 void ISA::initialize() {
-	MatrixXd::
+	GSM gaussian;
+	GSM gsm(numHiddens() + 1, 1);
+
+	for(int i = 0; i < numSubspaces(); ++i) {
+		if(gsm.dim() != mSubspaces[i].dim() || gsm.numScales() != mSubspaces[i].numScales()) {
+			gaussian = GSM(mSubspaces[i].dim(), 1);
+
+			// sample from Laplace with unit variance
+			RowVectorXd radial = (ArrayXXd::Random(1, 10000) + 1.) / 2.;
+			radial = radial.array().log() / sqrt(2. * PI);
+
+			// sample from unit sphere and scale by radial component
+			MatrixXd data = gaussian.sample(10000);
+			data = normalize(data).array().rowwise() * radial.array();
+
+			// fit GSM to multivariate Laplace distribution
+			gsm = GSM(mSubspaces[i].dim(), mSubspaces[i].numScales());
+			gsm.train(data, 200, 1e-8);
+		}
+
+		mSubspaces[i].setScales(gsm.scales());
+	}
 }
 
 
@@ -125,7 +150,8 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 			params.SGD.stepWidth *= improved ? 1.1 : 0.5;
 
 		// optimize marginal distributions
-		trainPrior(basis().inverse() * data, params);
+		if(params.trainPrior)
+			trainPrior(basis().inverse() * data, params);
 
 		if(params.callback)
 			if(!(*params.callback)(i + 1, *this))

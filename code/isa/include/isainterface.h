@@ -87,6 +87,13 @@ Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 			else
 				throw Exception("adaptive should be of type bool.");
 
+		PyObject* trainPrior = PyDict_GetItemString(parameters, "train_prior");
+		if(trainPrior)
+			if(PyBool_Check(trainPrior))
+				params.trainPrior = (trainPrior == Py_True);
+			else
+				throw Exception("train_prior should be of type bool.");
+
 		PyObject* callback = PyDict_GetItemString(parameters, "callback");
 		if(callback && PyCallable_Check(callback))
 			params.callback = new CallbackTrain(self, callback);
@@ -332,6 +339,14 @@ static PyObject* ISA_default_parameters(ISAObject* self) {
 		Py_INCREF(Py_False);
 	}
 
+	if(params.trainPrior) {
+		PyDict_SetItemString(parameters, "train_prior", Py_True);
+		Py_INCREF(Py_True);
+	} else {
+		PyDict_SetItemString(parameters, "train_prior", Py_False);
+		Py_INCREF(Py_False);
+	}
+
 	PyDict_SetItemString(SGD, "max_iter", PyInt_FromLong(params.SGD.maxIter));
 	PyDict_SetItemString(SGD, "batch_size", PyInt_FromLong(params.SGD.batchSize));
 	PyDict_SetItemString(SGD, "step_width", PyFloat_FromDouble(params.SGD.stepWidth));
@@ -380,6 +395,7 @@ static PyObject* ISA_initialize(ISAObject* self, PyObject* args, PyObject* kwds)
 	}
 
 	try {
+		self->isa->initialize();
 		self->isa->initialize(PyArray_ToMatrixXd(data));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
