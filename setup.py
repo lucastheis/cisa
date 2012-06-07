@@ -16,9 +16,10 @@ modules = [
 			os.path.join(numpy.__path__[0], 'core/include/numpy')],
 		library_dirs=[],
 		libraries=[],
-		extra_link_args=[],
+		extra_link_args=[
+			'-lgomp'],
 		extra_compile_args=[
-			'-g',
+			'-fopenmp',
 			'-Wno-write-strings'])]
 
 setup(

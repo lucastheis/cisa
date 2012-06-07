@@ -2,6 +2,7 @@ import sys
 import unittest
 
 sys.path.append('./code')
+sys.path.append('./build/lib.macosx-10.6-intel-2.7')
 
 from isa import GSM
 from numpy import asarray, isnan, any, sqrt, sum, square

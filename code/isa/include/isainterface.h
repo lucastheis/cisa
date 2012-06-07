@@ -229,6 +229,36 @@ static PyObject* ISA_default_parameters(ISAObject* self) {
 	return parameters;
 }
 
+
+
+static PyObject* ISA_initialize(ISAObject* self, PyObject* args, PyObject* kwds) {
+	char* kwlist[] = {"data", 0};
+
+	PyObject* data;
+
+	// read arguments
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &data))
+		return 0;
+
+	// make sure data is stored in NumPy array
+	if(!PyArray_Check(data)) {
+		PyErr_SetString(PyExc_TypeError, "Data has to be stored in a NumPy array.");
+		return 0;
+	}
+
+	try {
+		self->isa->initialize(PyArray_ToMatrixXd(data));
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+
+
 static PyObject* ISA_train(ISAObject* self, PyObject* args, PyObject* kwds) {
 	char* kwlist[] = {"data", "parameters", 0};
 
@@ -452,6 +482,7 @@ static PyGetSetDef ISA_getset[] = {
 
 static PyMethodDef ISA_methods[] = {
 	{"default_parameters", (PyCFunction)ISA_default_parameters, METH_NOARGS, 0},
+	{"initialize", (PyCFunction)ISA_initialize, METH_VARARGS|METH_KEYWORDS, 0},
 	{"train", (PyCFunction)ISA_train, METH_VARARGS|METH_KEYWORDS, 0},
 	{"sample", (PyCFunction)ISA_sample, METH_VARARGS|METH_KEYWORDS, 0},
 	{"sample_prior", (PyCFunction)ISA_sample_prior, METH_VARARGS|METH_KEYWORDS, 0},

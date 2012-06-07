@@ -1,6 +1,49 @@
 #include "isa.h"
 #include "Eigen/LU"
+#include "Eigen/Eigenvalues"
 #include <iostream>
+#include <algorithm>
+#include <cstdlib>
+#include <functional>
+
+using std::pair;
+using std::sort;
+using std::rand;
+using std::greater;
+
+VectorXi argsort(const VectorXd& data) {
+	// create pairs of values and indices
+	vector<pair<double, int> > pairs(data.size());
+	for(int i = 0; i < data.size(); ++i) {
+		pairs[i].first = data[i];
+		pairs[i].second = i;
+	}
+
+	// sort values in descending order
+	sort(pairs.begin(), pairs.end(), greater<pair<double, int> >());
+
+	// store indices
+	VectorXi indices(data.size());
+	for(int i = 0; i < data.size(); ++i)
+		indices[pairs[i].second] = i;
+
+	return indices;
+}
+
+
+
+MatrixXd covariance(const MatrixXd& data) {
+	MatrixXd data_centered = data.colwise() - data.rowwise().mean().eval();
+	return data_centered * data_centered.transpose() / data.cols();
+}
+
+
+
+MatrixXd normalize(const MatrixXd& matrix) {
+	return matrix.array().rowwise() / matrix.colwise().norm().eval().array();
+}
+
+
 
 ISA::ISA(int numVisibles, int numHiddens, int sSize, int numScales) :
 	mNumVisibles(numVisibles), mNumHiddens(numHiddens)
@@ -19,6 +62,45 @@ ISA::ISA(int numVisibles, int numHiddens, int sSize, int numScales) :
 
 
 ISA::~ISA() {
+}
+
+
+
+void ISA::initialize(const MatrixXd& data) {
+	// whiten data
+	SelfAdjointEigenSolver<MatrixXd> eigenSolver1(covariance(data));
+	MatrixXd dataWhite = eigenSolver1.operatorInverseSqrt() * data;
+
+	// sort data by norm descending
+	VectorXi indices = argsort(dataWhite.colwise().squaredNorm());
+
+	// largest index of largest 20% data points
+	int N = data.cols() / 5;
+	N = N < numHiddens() ? numHiddens() : N;
+	N = N > data.rows() ? data.rows() : N;
+
+	// store N largest data points and normalize
+	MatrixXd dataWhiteLarge = MatrixXd::Zero(data.rows(), N);
+	for(int i = 0; i < N; ++i)
+		dataWhiteLarge.col(i) = dataWhite.col(indices[i]);
+	dataWhiteLarge = normalize(dataWhiteLarge);
+
+	// pick first basis vector at random
+	mBasis.col(0) = dataWhiteLarge.col(rand() % N);
+
+	MatrixXd innerProd;
+	MatrixXd::Index j;
+
+	for(int i = 1; i < numHiddens(); ++i) {
+		// find data point with maximal inner product to other basis vectors
+		innerProd = mBasis.leftCols(i).transpose() * dataWhiteLarge;
+		innerProd.array().abs().colwise().maxCoeff().minCoeff(&j);
+		mBasis.col(i) = dataWhiteLarge.col(j);
+	}
+
+	// orthogonalize and unwhiten
+	SelfAdjointEigenSolver<MatrixXd> eigenSolver2(mBasis * mBasis.transpose());
+	mBasis = eigenSolver1.operatorSqrt() * eigenSolver2.operatorInverseSqrt() * mBasis;
 }
 
 
@@ -48,9 +130,14 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 
 
 void ISA::trainPrior(const MatrixXd& states, const Parameters params) {
-	// TODO: parallelize
-	for(int from = 0, i = 0; i < numSubspaces(); from += mSubspaces[i].dim(), ++i)
-		mSubspaces[i].train(states.middleRows(from, mSubspaces[i].dim()),
+	int from[numSubspaces()];
+	for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
+		from[i] = f;
+
+	#pragma omp parallel for
+	for(int i = 0; i < numSubspaces(); ++i)
+		mSubspaces[i].train(
+			states.middleRows(from[i], mSubspaces[i].dim()),
 			params.GSM.maxIter,
 			params.GSM.tol);
 }
@@ -67,7 +154,7 @@ bool ISA::trainSGD(
 
 	// filter matrix and momentum
 	MatrixXd W = basisLU.inverse();
-	MatrixXd P = MatrixXd::Zero(complBasis.rows(), complBasis.cols());
+	MatrixXd P = MatrixXd::Zero(W.rows(), W.cols());
 
 	// compute value of lower bound
 	double logDet = basisLU.matrixLU().diagonal().array().abs().log().sum();
@@ -79,10 +166,10 @@ bool ISA::trainSGD(
 
 			// update momentum with natural gradient
 			P = params.SGD.momentum * P + W
-				- priorEnergyGradient(W * X) * X.transpose() * (W.transpose() * W);
+				- priorEnergyGradient(W * X) * X.transpose() / params.SGD.batchSize * (W.transpose() * W);
 
 			// update filter matrix
-			W += params.SGD.stepWidth / params.SGD.batchSize * P;
+			W += params.SGD.stepWidth * P;
 		}
 	}
 
@@ -93,9 +180,11 @@ bool ISA::trainSGD(
 	double logDetNew = filterLU.matrixLU().diagonal().array().abs().log().sum();
 	double energyNew = priorEnergy(W * complData).array().mean() - logDetNew;
 
-	if(params.SGD.pocket && energy < energyNew)
+	if(params.SGD.pocket && energy < energyNew) {
 		// don't update basis
+		std::cout << "No improvement (step width: " << params.SGD.stepWidth << ")." << std::endl;
 		return false;
+	}
 
 	// update basis
 	setBasis(filterLU.inverse().leftCols(numHiddens()));
@@ -163,7 +252,8 @@ MatrixXd ISA::logLikelihood(const MatrixXd& data) {
 	// compute log-determinant of basis
 	double logDet = basisLU.matrixLU().diagonal().array().abs().log().sum();
 
-	MatrixXd states = basisLU.solve(data);
+	// multiplication is faster than solve()
+	MatrixXd states = basisLU.inverse() * data;
 	MatrixXd logLik = MatrixXd::Zero(states.rows(), states.cols());
 
 	// TODO: parallelize

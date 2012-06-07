@@ -43,7 +43,7 @@ bool GSM::train(const MatrixXd& data, int max_iter, double tol) {
 
 	RowVectorXd sqNorms = data.colwise().squaredNorm();
 
-	double logLik = logLikelihood(data).mean();
+	double logLik = logLikelihood(data, sqNorms).mean();
 
 	for(int i = 0; i < max_iter; ++i) {
 		// compute unnormalized posterior over mixture components (E)
@@ -53,8 +53,8 @@ bool GSM::train(const MatrixXd& data, int max_iter, double tol) {
 		mScales = ((post.rowwise() * sqNorms.array()).rowwise().mean()
 			/ (mDim * post.rowwise().mean())).sqrt();
 
-		if(tol > 0. && i % 10 == 0) {
-			double logLikNew = logLikelihood(data).mean();
+		if(tol > 0. && i % 5 == 0) {
+			double logLikNew = logLikelihood(data, sqNorms).mean();
 
 			// check for convergence
 			if(logLikNew - logLik < tol)

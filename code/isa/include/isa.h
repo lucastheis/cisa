@@ -49,12 +49,12 @@ struct Parameters {
 
 		SGD.maxIter = 1;
 		SGD.batchSize = 100;
-		SGD.stepWidth = 0.001;
+		SGD.stepWidth = 0.005;
 		SGD.momentum = 0.8;
 		SGD.shuffle = true;
 		SGD.pocket = true;
 
-		GSM.maxIter = 100;
+		GSM.maxIter = 10;
 		GSM.tol = 1e-8;
 	}
 };
@@ -71,6 +71,8 @@ class ISA {
 
 		inline MatrixXd basis();
 		inline void setBasis(const MatrixXd& basis);
+
+		virtual void initialize(const MatrixXd& data);
 
 		virtual void train(const MatrixXd& data, Parameters params = Parameters());
 		virtual void trainPrior(const MatrixXd& states, const Parameters params = Parameters());

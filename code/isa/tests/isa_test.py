@@ -5,8 +5,8 @@ sys.path.append('./code')
 sys.path.append('./build/lib.macosx-10.6-intel-2.7')
 
 from isa import ISA
-from numpy import sqrt, sum, square, dot, var
-from numpy.linalg import inv
+from numpy import sqrt, sum, square, dot, var, eye, cov, diag
+from numpy.linalg import inv, eig
 from numpy.random import randn
 from scipy.optimize import check_grad
 
@@ -17,6 +17,37 @@ class Tests(unittest.TestCase):
 		params = isa.default_parameters()
 
 		self.assertTrue(isinstance(params, dict))
+
+
+
+	def test_initialize(self):
+		def sqrtmi(mat):
+			"""
+			Compute matrix inverse square root.
+
+			@type  mat: array_like
+			@param mat: matrix for which to compute inverse square root
+			"""
+
+			# find eigenvectors
+			eigvals, eigvecs = eig(mat)
+
+			# eliminate eigenvectors whose eigenvalues are zero
+			eigvecs = eigvecs[:, eigvals > 0]
+			eigvals = eigvals[eigvals > 0]
+
+			# inverse square root
+			return dot(eigvecs, dot(diag(1. / sqrt(eigvals)), eigvecs.T))
+
+		# white data
+		data = randn(5, 1000)
+		data = dot(sqrtmi(cov(data)), data)
+
+		isa = ISA(5, 10)
+		isa.initialize(data)
+
+		# rows of A should be roughly orthogonal
+		self.assertTrue(sum(square(dot(isa.A, isa.A.T) - eye(5)).flatten()) < 1e-3)
 
 
 
