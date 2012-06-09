@@ -1,5 +1,6 @@
 #include "isa.h"
 #include "Eigen/LU"
+#include "Eigen/SVD"
 #include "Eigen/Eigenvalues"
 #include <iostream>
 #include <algorithm>
@@ -64,6 +65,13 @@ ISA::ISA(int numVisibles, int numHiddens, int sSize, int numScales) :
 
 
 ISA::~ISA() {
+}
+
+
+
+MatrixXd ISA::nullspaceBasis() {
+	JacobiSVD<MatrixXd> svd(basis(), ComputeFullV);
+	return svd.matrixV().rightCols(numHiddens() - numVisibles()).transpose();
 }
 
 
@@ -245,9 +253,21 @@ MatrixXd ISA::samplePrior(int numSamples) {
 
 
 
-MatrixXd ISA::samplePosterior(const MatrixXd& data) {
+MatrixXd ISA::sampleNullspace(const MatrixXd& data) {
 	// TODO: implement Gibbs sampling
-	return samplePrior(data.cols());
+	return nullspaceBasis() * samplePrior(data.cols());
+}
+
+
+
+MatrixXd ISA::samplePosterior(const MatrixXd& data) {
+	MatrixXd complData(numHiddens(), data.cols());
+	MatrixXd complBasis(numHiddens(), numHiddens());
+
+	complData << data, sampleNullspace(data);
+	complBasis << basis(), nullspaceBasis();
+
+	return complBasis.inverse() * complData;
 }
 
 

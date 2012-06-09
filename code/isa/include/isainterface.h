@@ -404,6 +404,17 @@ static PyObject* ISA_default_parameters(ISAObject* self) {
 
 
 
+static PyObject* ISA_nullspace_basis(ISAObject* self, PyObject* args, PyObject* kwds) {
+	try {
+		return PyArray_FromMatrixXd(self->isa->nullspaceBasis());
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+}
+
+
+
 static PyObject* ISA_initialize(ISAObject* self, PyObject* args, PyObject* kwds) {
 	char* kwlist[] = {"data", 0};
 
@@ -592,6 +603,7 @@ static PyGetSetDef ISA_getset[] = {
 
 static PyMethodDef ISA_methods[] = {
 	{"default_parameters", (PyCFunction)ISA_default_parameters, METH_VARARGS, 0},
+	{"nullspace_basis", (PyCFunction)ISA_nullspace_basis, METH_NOARGS, 0},
 	{"initialize", (PyCFunction)ISA_initialize, METH_VARARGS|METH_KEYWORDS, 0},
 	{"train", (PyCFunction)ISA_train, METH_VARARGS|METH_KEYWORDS, 0},
 	{"sample", (PyCFunction)ISA_sample, METH_VARARGS|METH_KEYWORDS, 0},

@@ -75,6 +75,8 @@ class ISA {
 		inline MatrixXd basis();
 		inline void setBasis(const MatrixXd& basis);
 
+		virtual MatrixXd nullspaceBasis();
+
 		virtual void initialize();
 		virtual void initialize(const MatrixXd& data);
 
@@ -89,6 +91,7 @@ class ISA {
 
 		virtual MatrixXd sample(int numSamples = 1);
 		virtual MatrixXd samplePrior(int numSamples = 1);
+		virtual MatrixXd sampleNullspace(const MatrixXd& data);
 		virtual MatrixXd samplePosterior(const MatrixXd& data);
 
 		virtual MatrixXd priorEnergy(const MatrixXd& states);

@@ -5,7 +5,7 @@ sys.path.append('./code')
 sys.path.append('./build/lib.macosx-10.6-intel-2.7')
 
 from isa import ISA
-from numpy import sqrt, sum, square, dot, var, eye, cov, diag, std
+from numpy import sqrt, sum, square, dot, var, eye, cov, diag, std, max
 from numpy.linalg import inv, eig
 from numpy.random import randn
 from scipy.optimize import check_grad
@@ -18,6 +18,20 @@ class Tests(unittest.TestCase):
 		params = isa.default_parameters()
 
 		self.assertTrue(isinstance(params, dict))
+
+
+
+	def test_nullspace_basis(self):
+		isa = ISA(2, 5)
+		B = isa.nullspace_basis()
+
+		# simple sanity checks
+		self.assertTrue(B.shape[0], 3)
+		self.assertTrue(B.shape[1], 5)
+
+		# B should be orthogonal to A and orthonormal
+		self.assertLess(max(abs(dot(isa.A, B.T).flatten())), 1e-10)
+		self.assertLess(max(abs((dot(B, B.T) - eye(3)).flatten())), 1e-10)
 
 
 
