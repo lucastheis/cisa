@@ -17,9 +17,9 @@ static PyObject* PyArray_FromMatrixXd(const MatrixXd& mat) {
 
 	// allocate PyArray
 	#ifdef EIGEN_DEFAULT_TO_ROW_MAJOR
-	PyObject* array = PyArray_New(&PyArray_Type, 2, dims, NPY_DOUBLE, 0, 0, 0, NPY_C_CONTIGUOUS, 0);
+	PyObject* array = PyArray_New(&PyArray_Type, 2, dims, NPY_DOUBLE, 0, 0, sizeof(double), NPY_C_CONTIGUOUS, 0);
 	#else
-	PyObject* array = PyArray_New(&PyArray_Type, 2, dims, NPY_DOUBLE, 0, 0, 0, NPY_F_CONTIGUOUS, 0);
+	PyObject* array = PyArray_New(&PyArray_Type, 2, dims, NPY_DOUBLE, 0, 0, sizeof(double), NPY_F_CONTIGUOUS, 0);
 	#endif
 
 	// copy data

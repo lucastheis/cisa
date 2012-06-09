@@ -5,10 +5,11 @@ sys.path.append('./code')
 sys.path.append('./build/lib.macosx-10.6-intel-2.7')
 
 from isa import ISA
-from numpy import sqrt, sum, square, dot, var, eye, cov, diag
+from numpy import sqrt, sum, square, dot, var, eye, cov, diag, std
 from numpy.linalg import inv, eig
 from numpy.random import randn
 from scipy.optimize import check_grad
+from scipy.stats import kstest, laplace
 
 class Tests(unittest.TestCase):
 	def test_default_parameters(self):
@@ -49,6 +50,22 @@ class Tests(unittest.TestCase):
 		# rows of A should be roughly orthogonal
 		self.assertTrue(sum(square(dot(isa.A, isa.A.T) - eye(5)).flatten()) < 1e-3)
 
+		p = kstest(
+			isa.sample_prior(100).flatten(),
+			lambda x: laplace.cdf(x, scale=1. / sqrt(2.)))[1]
+
+		# prior marginals should be roughly Laplace
+		self.assertTrue(p > 0.0001)
+
+
+
+	def test_subspaces(self):
+		isa = ISA(2, 4, 2)
+
+		# simple sanity checks
+		self.assertEqual(isa.subspaces[0].dim, 2)
+		self.assertEqual(isa.subspaces[1].dim, 2)
+
 
 
 	def test_train(self):
@@ -60,6 +77,16 @@ class Tests(unittest.TestCase):
 		params['SGD']['max_iter'] = 1
 		params['SGD']['batch_size'] = 57
 		isa.train(randn(2, 1000), params)
+
+
+
+	def test_sample_prior(self):
+		isa = ISA(5, 10)
+		samples = isa.sample_prior(20)
+
+		# simple sanity checks
+		self.assertEqual(samples.shape[0], 10)
+		self.assertEqual(samples.shape[1], 20)
 
 
 
@@ -108,6 +135,7 @@ class Tests(unittest.TestCase):
 
 		# difference between loglik and -energy should be const
 		self.assertTrue(var(loglik + energy) < 1e-10)
+
 
 
 	def test_callback(self):

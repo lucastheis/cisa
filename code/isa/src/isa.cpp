@@ -13,8 +13,6 @@ using std::rand;
 using std::greater;
 using std::sqrt;
 
-#define PI 3.141592653589793
-
 VectorXi argsort(const VectorXd& data) {
 	// create pairs of values and indices
 	vector<pair<double, int> > pairs(data.size());
@@ -80,7 +78,7 @@ void ISA::initialize() {
 
 			// sample from Laplace with unit variance
 			RowVectorXd radial = (ArrayXXd::Random(1, 10000) + 1.) / 2.;
-			radial = radial.array().log() / sqrt(2. * PI);
+			radial = radial.array().log() / sqrt(2.);
 
 			// sample from unit sphere and scale by radial component
 			MatrixXd data = gaussian.sample(10000);
@@ -137,6 +135,9 @@ void ISA::initialize(const MatrixXd& data) {
 
 
 void ISA::train(const MatrixXd& data, Parameters params) {
+	if(!complete())
+		throw Exception("Training of overcomplete models not implemented yet.");
+
 	if(params.callback)
 		// call callback function once before training
 		if(!(*params.callback)(0, *this))

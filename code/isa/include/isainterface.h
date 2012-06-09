@@ -5,6 +5,7 @@
 #include "exception.h"
 #include "pyutils.h"
 #include "Eigen/Core"
+#include "gsminterface.h"
 #include <iostream>
 
 using namespace Eigen;
@@ -95,8 +96,11 @@ Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 				throw Exception("train_prior should be of type bool.");
 
 		PyObject* callback = PyDict_GetItemString(parameters, "callback");
-		if(callback && PyCallable_Check(callback))
-			params.callback = new CallbackTrain(self, callback);
+		if(callback)
+			if(PyCallable_Check(callback))
+				params.callback = new CallbackTrain(self, callback);
+			else if(callback != Py_None)
+				throw Exception("callback should be a function or callable object.");
 
 		PyObject* SGD = PyDict_GetItemString(parameters, "SGD");
 
@@ -316,6 +320,27 @@ static int ISA_set_A(ISAObject* self, PyObject* value, void*) {
 
 
 
+/**
+ * Return copy of subspace GSMs.
+ */
+static PyObject* ISA_subspaces(ISAObject* self, PyObject*, void*) {
+	vector<GSM> subspaces = self->isa->subspaces();
+
+	PyObject* list = PyList_New(subspaces.size());
+
+	for(int i = 0; i < subspaces.size(); ++i) {
+		// create Python object representing GSM
+		PyObject* gsmObj = _PyObject_New(&GSM_type);
+		reinterpret_cast<GSMObject*>(gsmObj)->gsm = new GSM(subspaces[i]);
+
+		PyList_SetItem(list, i, gsmObj);
+	}
+
+	return list;
+}
+
+
+
 static PyObject* ISA_default_parameters(ISAObject* self) {
 	Parameters params;
 	PyObject* parameters = PyDict_New();
@@ -382,21 +407,22 @@ static PyObject* ISA_default_parameters(ISAObject* self) {
 static PyObject* ISA_initialize(ISAObject* self, PyObject* args, PyObject* kwds) {
 	char* kwlist[] = {"data", 0};
 
-	PyObject* data;
+	PyObject* data = 0;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &data))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "|O", kwlist, &data))
 		return 0;
 
 	// make sure data is stored in NumPy array
-	if(!PyArray_Check(data)) {
+	if(data && !PyArray_Check(data)) {
 		PyErr_SetString(PyExc_TypeError, "Data has to be stored in a NumPy array.");
 		return 0;
 	}
 
 	try {
 		self->isa->initialize();
-		self->isa->initialize(PyArray_ToMatrixXd(data));
+		if(data)
+			self->isa->initialize(PyArray_ToMatrixXd(data));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
@@ -558,6 +584,7 @@ static PyGetSetDef ISA_getset[] = {
 	{"num_visibles", (getter)ISA_num_visibles, 0, 0},
 	{"num_hiddens", (getter)ISA_num_hiddens, 0, 0},
 	{"A", (getter)ISA_A, (setter)ISA_set_A, 0},
+	{"subspaces", (getter)ISA_subspaces, 0, 0},
 	{0}
 };
 
