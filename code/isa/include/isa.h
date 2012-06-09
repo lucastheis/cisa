@@ -70,6 +70,7 @@ class ISA {
 		inline int numHiddens();
 		inline bool complete();
 		inline int numSubspaces();
+		inline vector<GSM> subspaces();
 
 		inline MatrixXd basis();
 		inline void setBasis(const MatrixXd& basis);
@@ -78,7 +79,9 @@ class ISA {
 		virtual void initialize(const MatrixXd& data);
 
 		virtual void train(const MatrixXd& data, Parameters params = Parameters());
-		virtual void trainPrior(const MatrixXd& states, const Parameters params = Parameters());
+		virtual void trainPrior(
+			const MatrixXd& states,
+			const Parameters params = Parameters());
 		virtual bool trainSGD(
 			const MatrixXd& complData,
 			const MatrixXd& complBasis,
@@ -109,7 +112,7 @@ inline int ISA::numVisibles() {
 
 
 inline int ISA::numHiddens() {
-	return mNumVisibles;
+	return mNumHiddens;
 }
 
 
@@ -122,6 +125,12 @@ inline bool ISA::complete() {
 
 inline int ISA::numSubspaces() {
 	return mSubspaces.size();
+}
+
+
+
+inline vector<GSM> ISA::subspaces() {
+	return mSubspaces;
 }
 
 
