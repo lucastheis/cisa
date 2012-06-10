@@ -235,19 +235,16 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 		// optimize basis
 		bool improved = trainSGD(data, basis(), params);
 
-		if(params.adaptive)
-			params.SGD.stepWidth *= improved ? 1.1 : 0.5;
-
-		// optimize marginal distributions
 		if(params.trainPrior)
+			// optimize marginal distributions
 			trainPrior(basis().inverse() * data, params);
 
 		if(params.callback)
 			if(!(*params.callback)(i + 1, *this))
 				break;
 
-		// print some information
 		if(params.verbosity > 0) {
+			// print some information
 			cout << setw(5) << i;
 			if(complete())
 				cout << setw(14) << fixed << setprecision(7) << evaluate(data);
@@ -255,6 +252,10 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 				cout << setw(14) << fixed << setprecision(7) << params.SGD.stepWidth;
 			cout << endl;
 		}
+
+		if(params.adaptive)
+			// adapt step width
+			params.SGD.stepWidth *= improved ? 1.1 : 0.5;
 	}
 }
 
@@ -288,9 +289,10 @@ bool ISA::trainSGD(
 	// LU decomposition
 	PartialPivLU<MatrixXd> basisLU(complBasis);
 
-	// filter matrix and momentum
+	// filter matrix, momentum and batch
 	MatrixXd W = basisLU.inverse();
 	MatrixXd P = MatrixXd::Zero(W.rows(), W.cols());
+	MatrixXd X;
 
 	// compute value of lower bound
 	double logDet = basisLU.matrixLU().diagonal().array().abs().log().sum();
@@ -298,7 +300,7 @@ bool ISA::trainSGD(
 
 	for(int i = 0; i < params.SGD.maxIter; ++i) {
 		for(int j = 0; j + params.SGD.batchSize <= complData.cols(); j += params.SGD.batchSize) {
-			MatrixXd X = complData.middleCols(j, params.SGD.batchSize);
+			X = complData.middleCols(j, params.SGD.batchSize);
 
 			// update momentum with natural gradient
 			P = params.SGD.momentum * P + W
@@ -371,10 +373,14 @@ MatrixXd ISA::samplePosterior(const MatrixXd& data, const Parameters params) {
 MatrixXd ISA::priorEnergy(const MatrixXd& states) {
 	MatrixXd energy = MatrixXd::Zero(states.rows(), states.cols());
 
-	// TODO: parallelize
-	for(int from = 0, i = 0; i < numSubspaces(); from += mSubspaces[i].dim(), ++i)
-		energy.middleRows(from, mSubspaces[i].dim()) =
-			mSubspaces[i].energy(states.middleRows(from, mSubspaces[i].dim()));
+	int from[numSubspaces()];
+	for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
+		from[i] = f;
+
+	#pragma omp parallel for
+	for(int i = 0; i < numSubspaces(); ++i)
+		energy.middleRows(from[i], mSubspaces[i].dim()) =
+			mSubspaces[i].energy(states.middleRows(from[i], mSubspaces[i].dim()));
 
 	return energy.colwise().sum();
 }
@@ -384,10 +390,14 @@ MatrixXd ISA::priorEnergy(const MatrixXd& states) {
 MatrixXd ISA::priorEnergyGradient(const MatrixXd& states) {
 	MatrixXd gradient = MatrixXd::Zero(states.rows(), states.cols());
 
-	// TODO: parallelize
-	for(int from = 0, i = 0; i < numSubspaces(); from += mSubspaces[i].dim(), ++i)
-		gradient.middleRows(from, mSubspaces[i].dim()) =
-			mSubspaces[i].energyGradient(states.middleRows(from, mSubspaces[i].dim()));
+	int from[numSubspaces()];
+	for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
+		from[i] = f;
+
+	#pragma omp parallel for
+	for(int i = 0; i < numSubspaces(); ++i)
+		gradient.middleRows(from[i], mSubspaces[i].dim()) =
+			mSubspaces[i].energyGradient(states.middleRows(from[i], mSubspaces[i].dim()));
 
 	return gradient;
 }
@@ -408,10 +418,14 @@ Array<double, 1, Dynamic> ISA::logLikelihood(const MatrixXd& data) {
 	MatrixXd states = basisLU.inverse() * data;
 	MatrixXd logLik = MatrixXd::Zero(states.rows(), states.cols());
 
-	// TODO: parallelize
-	for(int from = 0, i = 0; i < numSubspaces(); from += mSubspaces[i].dim(), ++i)
-		logLik.middleRows(from, mSubspaces[i].dim()) =
-			mSubspaces[i].logLikelihood(states.middleRows(from, mSubspaces[i].dim()));
+	int from[numSubspaces()];
+	for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
+		from[i] = f;
+
+	#pragma omp parallel for
+	for(int i = 0; i < numSubspaces(); ++i)
+		logLik.middleRows(from[i], mSubspaces[i].dim()) =
+			mSubspaces[i].logLikelihood(states.middleRows(from[i], mSubspaces[i].dim()));
 
 	return logLik.colwise().sum().array() - logDet;
 }
