@@ -2,6 +2,7 @@
 #define ISA_H
 
 #include "Eigen/Core"
+#include "distribution.h"
 #include "gsm.h"
 #include <string>
 #include <vector>
@@ -10,7 +11,7 @@ using namespace Eigen;
 using std::string;
 using std::vector;
 
-class ISA {
+class ISA : public Distribution {
 	public:
 		class Callback {
 			public:
@@ -21,6 +22,7 @@ class ISA {
 
 		struct Parameters {
 			public:
+				int verbosity;
 				string trainingMethod;
 				string samplingMethod;
 				int maxIter;
@@ -45,11 +47,13 @@ class ISA {
 				Parameters();
 				Parameters(const Parameters& params);
 				virtual ~Parameters();
+				virtual Parameters& operator=(const Parameters& params);
 		};
 
 		ISA(int numVisibles, int numHiddens = -1, int sSize = 1, int numScales = 10);
 		virtual ~ISA();
 
+		inline int dim();
 		inline int numVisibles();
 		inline int numHiddens();
 		inline bool complete();
@@ -81,7 +85,7 @@ class ISA {
 		virtual MatrixXd priorEnergy(const MatrixXd& states);
 		virtual MatrixXd priorEnergyGradient(const MatrixXd& states);
 
-		virtual MatrixXd logLikelihood(const MatrixXd& data);
+		virtual Array<double, 1, Dynamic> logLikelihood(const MatrixXd& data);
 
 	protected:
 		int mNumVisibles;
@@ -89,6 +93,12 @@ class ISA {
 		MatrixXd mBasis;
 		vector<GSM> mSubspaces;
 };
+
+
+
+inline int ISA::dim() {
+	return mNumVisibles;
+}
 
 
 

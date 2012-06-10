@@ -95,13 +95,17 @@ class Tests(unittest.TestCase):
 		# make sure train() doesn't throw any errors
 		isa = ISA(2)
 		params = isa.default_parameters()
-		params['max_iter'] = 1
+		params['verbosity'] = 0
+		params['max_iter'] = 2
 		params['training_method'] = 'SGD'
 		params['SGD']['max_iter'] = 1
 		params['SGD']['batch_size'] = 57
+
+		isa.initialize(randn(2, 1000))
 		isa.train(randn(2, 1000), params)
 
 		isa = ISA(4, ssize=2)
+		isa.initialize(randn(4, 1000))
 		isa.train(randn(4, 1000), params)
 
 
@@ -175,6 +179,7 @@ class Tests(unittest.TestCase):
 
 		# set callback function
 		parameters = {
+				'verbosity': 0,
 				'max_iter': 7,
 				'callback': callback,
 				'SGD': {'max_iter': 0}

@@ -112,6 +112,13 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 		if(!PyDict_Check(parameters))
 			throw Exception("Parameters should be stored in a dictionary.");
 
+		PyObject* verbosity = PyDict_GetItemString(parameters, "verbosity");
+		if(verbosity)
+			if(PyInt_Check(verbosity))
+				params.verbosity = PyInt_AsLong(verbosity);
+			else
+				throw Exception("verbosity should be of type int.");
+
 		PyObject* trainingMethod = PyDict_GetItemString(parameters, "training_method");
 		if(trainingMethod)
 			if(PyString_Check(trainingMethod))
@@ -379,11 +386,11 @@ static PyObject* ISA_default_parameters(ISAObject* self) {
 	PyObject* SGD = PyDict_New();
 	PyObject* GSM = PyDict_New();
 
+	PyDict_SetItemString(parameters, "verbosity", PyInt_FromLong(params.verbosity));
 	PyDict_SetItemString(parameters, "training_method",
 		PyString_FromString(params.trainingMethod.c_str()));
 	PyDict_SetItemString(parameters, "sampling_method",
 		PyString_FromString(params.samplingMethod.c_str()));
-
 	PyDict_SetItemString(parameters, "max_iter", PyInt_FromLong(params.maxIter));
 	PyDict_SetItemString(parameters, "callback", Py_None);
 	Py_INCREF(Py_None);

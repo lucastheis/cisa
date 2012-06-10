@@ -2,6 +2,7 @@
 #define GSM_H
 
 #include "Eigen/Core"
+#include "distribution.h"
 #include "exception.h"
 #include <iostream>
 #include <cmath>
@@ -9,7 +10,7 @@
 using namespace Eigen;
 using std::sqrt;
 
-class GSM {
+class GSM : public Distribution {
 	public:
 		GSM(int dim = 1, int numScales = 10);
 

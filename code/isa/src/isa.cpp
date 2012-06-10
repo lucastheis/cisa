@@ -3,16 +3,13 @@
 #include "Eigen/SVD"
 #include "Eigen/Eigenvalues"
 #include <iostream>
+#include <iomanip>
 #include <algorithm>
 #include <cstdlib>
 #include <cmath>
 #include <functional>
 
-using std::pair;
-using std::sort;
-using std::rand;
-using std::greater;
-using std::sqrt;
+using namespace std;
 
 VectorXi argsort(const VectorXd& data) {
 	// create pairs of values and indices
@@ -55,6 +52,7 @@ ISA::Callback::~Callback() {
 
 ISA::Parameters::Parameters() {
 	// default parameters
+	verbosity = 0;
 	trainingMethod = "SGD";
 	samplingMethod = "Gibbs";
 	maxIter = 10;
@@ -76,6 +74,7 @@ ISA::Parameters::Parameters() {
 
 
 ISA::Parameters::Parameters(const Parameters& params) :
+	verbosity(params.verbosity),
 	trainingMethod(params.trainingMethod),
 	samplingMethod(params.samplingMethod),
 	maxIter(params.maxIter),
@@ -94,6 +93,22 @@ ISA::Parameters::Parameters(const Parameters& params) :
 ISA::Parameters::~Parameters() {
 	if(callback)
 		delete callback;
+}
+
+
+
+ISA::Parameters& ISA::Parameters::operator=(const Parameters& params) {
+	verbosity = params.verbosity;
+	trainingMethod = params.trainingMethod;
+	samplingMethod = params.samplingMethod;
+	maxIter = params.maxIter;
+	adaptive = params.adaptive;
+	trainPrior = params.trainPrior;
+	callback = params.callback ? params.callback->copy() : 0;
+	SGD = params.SGD;
+	GSM = params.GSM;
+
+	return *this;
 }
 
 
@@ -154,6 +169,9 @@ void ISA::initialize() {
 
 
 void ISA::initialize(const MatrixXd& data) {
+	if(data.rows() != numVisibles())
+		throw Exception("Data has wrong dimensionality.");
+
 	// whiten data
 	SelfAdjointEigenSolver<MatrixXd> eigenSolver1(covariance(data));
 	MatrixXd dataWhite = eigenSolver1.operatorInverseSqrt() * data;
@@ -196,10 +214,22 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 	if(!complete())
 		throw Exception("Training of overcomplete models not implemented yet.");
 
+	if(data.rows() != numVisibles())
+		throw Exception("Data has wrong dimensionality.");
+
 	if(params.callback)
 		// call callback function once before training
 		if(!(*params.callback)(0, *this))
 			return;
+
+	if(params.verbosity > 0) {
+		cout << setw(5) << "Epoch";
+		if(complete())
+			cout << setw(14) << "Value";
+		if(params.adaptive)
+			cout << setw(14) << "Step width";
+		cout << endl;
+	}
 
 	for(int i = 0; i < params.maxIter; ++i) {
 		// optimize basis
@@ -215,6 +245,16 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 		if(params.callback)
 			if(!(*params.callback)(i + 1, *this))
 				break;
+
+		// print some information
+		if(params.verbosity > 0) {
+			cout << setw(5) << i;
+			if(complete())
+				cout << setw(14) << fixed << setprecision(7) << evaluate(data);
+			if(params.adaptive)
+				cout << setw(14) << fixed << setprecision(7) << params.SGD.stepWidth;
+			cout << endl;
+		}
 	}
 }
 
@@ -276,11 +316,9 @@ bool ISA::trainSGD(
 	double logDetNew = filterLU.matrixLU().diagonal().array().abs().log().sum();
 	double energyNew = priorEnergy(W * complData).array().mean() - logDetNew;
 
-	if(params.SGD.pocket && energy < energyNew) {
+	if(params.SGD.pocket && energy < energyNew)
 		// don't update basis
-		std::cout << "No improvement (step width: " << params.SGD.stepWidth << ")." << std::endl;
 		return false;
-	}
 
 	// update basis
 	setBasis(filterLU.inverse().leftCols(numHiddens()));
@@ -309,6 +347,9 @@ MatrixXd ISA::samplePrior(int numSamples) {
 
 
 MatrixXd ISA::sampleNullspace(const MatrixXd& data, const Parameters params) {
+	if(data.rows() != numVisibles())
+		throw Exception("Data has wrong dimensionality.");
+
 	// TODO: implement Gibbs sampling
 	return nullspaceBasis() * samplePrior(data.cols());
 }
@@ -353,7 +394,10 @@ MatrixXd ISA::priorEnergyGradient(const MatrixXd& states) {
 
 
 
-MatrixXd ISA::logLikelihood(const MatrixXd& data) {
+Array<double, 1, Dynamic> ISA::logLikelihood(const MatrixXd& data) {
+	if(data.rows() != numVisibles())
+		throw Exception("Data has wrong dimensionality.");
+
 	// LU decomposition
 	PartialPivLU<MatrixXd> basisLU(mBasis);
 
