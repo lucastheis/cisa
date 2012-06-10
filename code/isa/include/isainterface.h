@@ -17,10 +17,13 @@ struct ISAObject {
 
 
 
-class CallbackTrain : public Callback {
+class CallbackTrain : public ISA::Callback {
 	public:
 		CallbackTrain(ISAObject* isa, PyObject* callback);
+		CallbackTrain(const CallbackTrain& callbackTrain);
 		virtual ~CallbackTrain();
+		virtual CallbackTrain& operator=(const CallbackTrain& callbackTrain);
+		virtual CallbackTrain* copy();
 		virtual bool operator()(int iter, const ISA&);
 
 	private:
@@ -40,6 +43,16 @@ CallbackTrain::CallbackTrain(ISAObject* isa, PyObject* callback) :
 
 
 
+CallbackTrain::CallbackTrain(const CallbackTrain& callbackTrain) :
+	mIsa(callbackTrain.mIsa),
+	mCallback(callbackTrain.mCallback)
+{
+	Py_INCREF(mIsa);
+	Py_INCREF(mCallback);
+}
+
+
+
 CallbackTrain::~CallbackTrain() {
 	Py_DECREF(mIsa);
 	Py_DECREF(mCallback);
@@ -47,11 +60,52 @@ CallbackTrain::~CallbackTrain() {
 
 
 
+CallbackTrain& CallbackTrain::operator=(const CallbackTrain& callbackTrain) {
+	Py_DECREF(mIsa);
+	Py_DECREF(mCallback);
+
+	mIsa = callbackTrain.mIsa;
+	mCallback = callbackTrain.mCallback;
+
+	Py_INCREF(mIsa);
+	Py_INCREF(mCallback);
+}
+
+
+
+CallbackTrain* CallbackTrain::copy() {
+	return new CallbackTrain(*this);
+}
+
+
+
+bool CallbackTrain::operator()(int iter, const ISA&) {
+	// call Python object
+	PyObject* args = Py_BuildValue("(iO)", iter, mIsa);
+	PyObject* result = PyObject_CallObject(mCallback, args);
+
+	Py_DECREF(args);
+
+	// if cont is false, training will be aborted
+	bool cont = true;
+	if(result) {
+		if(PyBool_Check(result))
+			cont = (result == Py_True);
+		Py_DECREF(result);
+	} else {
+		throw Exception("Some error occured during callback().");
+	}
+
+	return cont;
+}
+
+
+
 /**
  * Extract parameters from Python object.
  */
-Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
-	Parameters params;
+ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
+	ISA::Parameters params;
 
 	// read parameters from dictionary
 	if(parameters) {
@@ -190,28 +244,6 @@ Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 
 
 
-bool CallbackTrain::operator()(int iter, const ISA&) {
-	// call Python object
-	PyObject* args = Py_BuildValue("(iO)", iter, mIsa);
-	PyObject* result = PyObject_CallObject(mCallback, args);
-
-	Py_DECREF(args);
-
-	// if cont is false, training will be aborted
-	bool cont = true;
-	if(result) {
-		if(PyBool_Check(result))
-			cont = (result == Py_True);
-		Py_DECREF(result);
-	} else {
-		throw Exception("Some error occured during callback().");
-	}
-
-	return cont;
-}
-
-
-
 /**
  * Create a new ISA object.
  */
@@ -342,7 +374,7 @@ static PyObject* ISA_subspaces(ISAObject* self, PyObject*, void*) {
 
 
 static PyObject* ISA_default_parameters(ISAObject* self) {
-	Parameters params;
+	ISA::Parameters params;
 	PyObject* parameters = PyDict_New();
 	PyObject* SGD = PyDict_New();
 	PyObject* GSM = PyDict_New();
@@ -462,13 +494,10 @@ static PyObject* ISA_train(ISAObject* self, PyObject* args, PyObject* kwds) {
 	}
 
 	try {
-		Parameters params = PyObject_ToParameters(self, parameters);
+		ISA::Parameters params = PyObject_ToParameters(self, parameters);
 			
 		// fit model to training data
 		self->isa->train(PyArray_ToMatrixXd(data), params);
-
-		if(params.callback)
-			delete params.callback;
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
@@ -508,6 +537,60 @@ static PyObject* ISA_sample_prior(ISAObject* self, PyObject* args, PyObject* kwd
 
 	try {
 		return PyArray_FromMatrixXd(self->isa->samplePrior(num_samples));
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+}
+
+
+
+static PyObject* ISA_sample_nullspace(ISAObject* self, PyObject* args, PyObject* kwds) {
+	char* kwlist[] = {"data", "parameters", 0};
+
+	PyObject* data;
+	PyObject* parameters = 0;
+
+	// read arguments
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &data, &parameters))
+		return 0;
+
+	// make sure data is stored in NumPy array
+	if(!PyArray_Check(data)) {
+		PyErr_SetString(PyExc_TypeError, "Data has to be stored in a NumPy array.");
+		return 0;
+	}
+
+	try {
+		ISA::Parameters params = PyObject_ToParameters(self, parameters);
+		return PyArray_FromMatrixXd(self->isa->sampleNullspace(PyArray_ToMatrixXd(data), params));
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+}
+
+
+
+static PyObject* ISA_sample_posterior(ISAObject* self, PyObject* args, PyObject* kwds) {
+	char* kwlist[] = {"data", "parameters", 0};
+
+	PyObject* data;
+	PyObject* parameters = 0;
+
+	// read arguments
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &data, &parameters))
+		return 0;
+
+	// make sure data is stored in NumPy array
+	if(!PyArray_Check(data)) {
+		PyErr_SetString(PyExc_TypeError, "Data has to be stored in a NumPy array.");
+		return 0;
+	}
+
+	try {
+		ISA::Parameters params = PyObject_ToParameters(self, parameters);
+		return PyArray_FromMatrixXd(self->isa->samplePosterior(PyArray_ToMatrixXd(data), params));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
@@ -608,6 +691,8 @@ static PyMethodDef ISA_methods[] = {
 	{"train", (PyCFunction)ISA_train, METH_VARARGS|METH_KEYWORDS, 0},
 	{"sample", (PyCFunction)ISA_sample, METH_VARARGS|METH_KEYWORDS, 0},
 	{"sample_prior", (PyCFunction)ISA_sample_prior, METH_VARARGS|METH_KEYWORDS, 0},
+	{"sample_nullspace", (PyCFunction)ISA_sample_nullspace, METH_VARARGS|METH_KEYWORDS, 0},
+	{"sample_posterior", (PyCFunction)ISA_sample_posterior, METH_VARARGS|METH_KEYWORDS, 0},
 	{"prior_energy", (PyCFunction)ISA_prior_energy, METH_VARARGS|METH_KEYWORDS, 0},
 	{"prior_energy_gradient", (PyCFunction)ISA_prior_energy_gradient, METH_VARARGS|METH_KEYWORDS, 0},
 	{"loglikelihood", (PyCFunction)ISA_loglikelihood, METH_VARARGS|METH_KEYWORDS, 0},

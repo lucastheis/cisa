@@ -48,6 +48,56 @@ MatrixXd normalize(const MatrixXd& matrix) {
 
 
 
+ISA::Callback::~Callback() {
+}
+
+
+
+ISA::Parameters::Parameters() {
+	// default parameters
+	trainingMethod = "SGD";
+	samplingMethod = "Gibbs";
+	maxIter = 10;
+	adaptive = true;
+	trainPrior = true;
+	callback = 0;
+
+	SGD.maxIter = 1;
+	SGD.batchSize = 100;
+	SGD.stepWidth = 0.005;
+	SGD.momentum = 0.8;
+	SGD.shuffle = true;
+	SGD.pocket = true;
+
+	GSM.maxIter = 10;
+	GSM.tol = 1e-8;
+}
+
+
+
+ISA::Parameters::Parameters(const Parameters& params) :
+	trainingMethod(params.trainingMethod),
+	samplingMethod(params.samplingMethod),
+	maxIter(params.maxIter),
+	adaptive(params.adaptive),
+	trainPrior(params.trainPrior),
+	callback(0),
+	SGD(params.SGD),
+	GSM(params.GSM)
+{
+	if(params.callback)
+		callback = params.callback->copy();
+}
+
+
+
+ISA::Parameters::~Parameters() {
+	if(callback)
+		delete callback;
+}
+
+
+
 ISA::ISA(int numVisibles, int numHiddens, int sSize, int numScales) :
 	mNumVisibles(numVisibles), mNumHiddens(numHiddens)
 {
@@ -253,14 +303,14 @@ MatrixXd ISA::samplePrior(int numSamples) {
 
 
 
-MatrixXd ISA::sampleNullspace(const MatrixXd& data) {
+MatrixXd ISA::sampleNullspace(const MatrixXd& data, const Parameters params) {
 	// TODO: implement Gibbs sampling
 	return nullspaceBasis() * samplePrior(data.cols());
 }
 
 
 
-MatrixXd ISA::samplePosterior(const MatrixXd& data) {
+MatrixXd ISA::samplePosterior(const MatrixXd& data, const Parameters params) {
 	MatrixXd complData(numHiddens(), data.cols());
 	MatrixXd complBasis(numHiddens(), numHiddens());
 

@@ -10,59 +10,43 @@ using namespace Eigen;
 using std::string;
 using std::vector;
 
-class ISA;
-
-class Callback {
-	public:
-		virtual ~Callback() { }
-		virtual bool operator()(int iter, const ISA& isa) = 0;
-};
-
-struct Parameters {
-	string trainingMethod;
-	string samplingMethod;
-	int maxIter;
-	bool adaptive;
-	bool trainPrior;
-	Callback* callback;
-
-	struct {
-		int maxIter;
-		int batchSize;
-		double stepWidth;
-		double momentum;
-		bool shuffle;
-		bool pocket;
-	} SGD;
-
-	struct {
-		int maxIter;
-		double tol;
-	} GSM;
-
-	Parameters() {
-		// default parameters
-		trainingMethod = "SGD";
-		samplingMethod = "Gibbs";
-		maxIter = 10;
-		adaptive = true;
-		trainPrior = true;
-		callback = 0;
-
-		SGD.maxIter = 1;
-		SGD.batchSize = 100;
-		SGD.stepWidth = 0.005;
-		SGD.momentum = 0.8;
-		SGD.shuffle = true;
-		SGD.pocket = true;
-
-		GSM.maxIter = 10;
-		GSM.tol = 1e-8;
-	}
-};
-
 class ISA {
 	public:
+		class Callback {
+			public:
+				virtual ~Callback();
+				virtual Callback* copy() = 0;
+				virtual bool operator()(int iter, const ISA& isa) = 0;
+		};
+
+		struct Parameters {
+			public:
+				string trainingMethod;
+				string samplingMethod;
+				int maxIter;
+				bool adaptive;
+				bool trainPrior;
+				Callback* callback;
+
+				struct {
+					int maxIter;
+					int batchSize;
+					double stepWidth;
+					double momentum;
+					bool shuffle;
+					bool pocket;
+				} SGD;
+
+				struct {
+					int maxIter;
+					double tol;
+				} GSM;
+
+				Parameters();
+				Parameters(const Parameters& params);
+				virtual ~Parameters();
+		};
+
 		ISA(int numVisibles, int numHiddens = -1, int sSize = 1, int numScales = 10);
 		virtual ~ISA();
 
@@ -91,8 +75,8 @@ class ISA {
 
 		virtual MatrixXd sample(int numSamples = 1);
 		virtual MatrixXd samplePrior(int numSamples = 1);
-		virtual MatrixXd sampleNullspace(const MatrixXd& data);
-		virtual MatrixXd samplePosterior(const MatrixXd& data);
+		virtual MatrixXd sampleNullspace(const MatrixXd& data, const Parameters params = Parameters());
+		virtual MatrixXd samplePosterior(const MatrixXd& data, const Parameters params = Parameters());
 
 		virtual MatrixXd priorEnergy(const MatrixXd& states);
 		virtual MatrixXd priorEnergyGradient(const MatrixXd& states);

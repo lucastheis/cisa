@@ -13,11 +13,12 @@ from scipy.stats import kstest, laplace
 
 class Tests(unittest.TestCase):
 	def test_default_parameters(self):
-		# make sure default_parameters() works as expected
 		isa = ISA(2, 4)
 		params = isa.default_parameters()
 
+		# simple sanity checks
 		self.assertTrue(isinstance(params, dict))
+		self.assertEqual(sys.getrefcount(params) - 1, 1)
 
 
 
@@ -32,6 +33,8 @@ class Tests(unittest.TestCase):
 		# B should be orthogonal to A and orthonormal
 		self.assertLess(max(abs(dot(isa.A, B.T).flatten())), 1e-10)
 		self.assertLess(max(abs((dot(B, B.T) - eye(3)).flatten())), 1e-10)
+
+		self.assertEqual(sys.getrefcount(B) - 1, 1)
 
 
 
@@ -79,6 +82,8 @@ class Tests(unittest.TestCase):
 		# simple sanity checks
 		self.assertEqual(isa.subspaces[0].dim, 2)
 		self.assertEqual(isa.subspaces[1].dim, 2)
+
+		self.assertEqual(sys.getrefcount(isa.subspaces), 1)
 
 
 
@@ -186,8 +191,9 @@ class Tests(unittest.TestCase):
 		# test how often callback function was called
 		self.assertEqual(callback.count, 5)
 
-		# make sure referece count stays stable
+		# make sure referece counts stay stable
 		self.assertEqual(sys.getrefcount(isa) - 1, 1)
+		self.assertEqual(sys.getrefcount(callback) - 1, 2)
 
 
 
