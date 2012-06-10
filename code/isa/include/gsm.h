@@ -4,8 +4,10 @@
 #include "Eigen/Core"
 #include "exception.h"
 #include <iostream>
+#include <cmath>
 
 using namespace Eigen;
+using std::sqrt;
 
 class GSM {
 	public:
@@ -16,6 +18,9 @@ class GSM {
 
 		inline ArrayXd scales();
 		inline void setScales(MatrixXd scales);
+
+		inline double variance();
+		inline void normalize();
 
 		virtual bool train(const MatrixXd& data, int maxIter = 100, double tol = 1e-5);
 
@@ -59,6 +64,18 @@ inline int GSM::numScales() {
 
 inline ArrayXd GSM::scales() {
 	return mScales;
+}
+
+
+
+inline double GSM::variance() {
+	return mScales.square().mean();
+}
+
+
+
+inline void GSM::normalize() {
+	mScales /= sqrt(variance());
 }
 
 

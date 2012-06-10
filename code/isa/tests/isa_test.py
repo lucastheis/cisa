@@ -74,6 +74,10 @@ class Tests(unittest.TestCase):
 		# prior marginals should be roughly Laplace
 		self.assertTrue(p > 0.0001)
 
+		# test initialization with larger subspaces
+		isa = ISA(5, 10, ssize=2)
+		isa.initialize(data)
+
 
 
 	def test_subspaces(self):
@@ -96,6 +100,9 @@ class Tests(unittest.TestCase):
 		params['SGD']['max_iter'] = 1
 		params['SGD']['batch_size'] = 57
 		isa.train(randn(2, 1000), params)
+
+		isa = ISA(4, ssize=2)
+		isa.train(randn(4, 1000), params)
 
 
 

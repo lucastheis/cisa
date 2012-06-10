@@ -5,8 +5,8 @@ sys.path.append('./code')
 sys.path.append('./build/lib.macosx-10.6-intel-2.7')
 
 from isa import GSM
-from numpy import asarray, isnan, any, sqrt, sum, square
-from numpy.random import randn
+from numpy import asarray, isnan, any, sqrt, sum, square, std
+from numpy.random import randn, rand
 from scipy.stats import kstest, norm, laplace, cauchy
 from scipy.optimize import check_grad
 
@@ -77,6 +77,17 @@ class Tests(unittest.TestCase):
 
 			# comparison with numerical gradient
 			self.assertLess(relative_error, 0.001)
+
+
+
+	def test_normalize(self):
+		gsm = GSM(1, 5)
+		gsm.scales = rand(gsm.num_scales) + 1.
+		gsm.normalize()
+
+		# variance should be 1 after normalization
+		self.assertLess(abs(gsm.variance() - 1.), 1e-8)
+		self.assertLess(abs(std(gsm.sample(10**6), ddof=1) - 1.), 1e-2)
 
 
 

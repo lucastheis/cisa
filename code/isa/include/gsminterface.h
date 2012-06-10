@@ -113,6 +113,31 @@ static int GSM_set_scales(GSMObject* self, PyObject* value, void*) {
 
 
 
+static PyObject* GSM_variance(GSMObject* self, PyObject*, PyObject*) {
+	try {
+		return PyFloat_FromDouble(self->gsm->variance());
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+}
+
+
+
+static PyObject* GSM_normalize(GSMObject* self, PyObject*, PyObject*) {
+	try {
+		self->gsm->normalize();
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+
+
 static PyObject* GSM_train(GSMObject* self, PyObject* args, PyObject* kwds) {
 	char* kwlist[] = {"data", "max_iter", "tol", 0};
 
@@ -303,6 +328,8 @@ static PyGetSetDef GSM_getset[] = {
 static PyMethodDef GSM_methods[] = {
 	{"train", (PyCFunction)GSM_train, METH_VARARGS|METH_KEYWORDS, 0},
 	{"posterior", (PyCFunction)GSM_posterior, METH_VARARGS|METH_KEYWORDS, 0},
+	{"variance", (PyCFunction)GSM_variance, METH_NOARGS, 0},
+	{"normalize", (PyCFunction)GSM_normalize, METH_NOARGS, 0},
 	{"sample", (PyCFunction)GSM_sample, METH_VARARGS|METH_KEYWORDS, 0},
 	{"sample_posterior", (PyCFunction)GSM_sample_posterior, METH_VARARGS|METH_KEYWORDS, 0},
 	{"loglikelihood", (PyCFunction)GSM_loglikelihood, METH_VARARGS|METH_KEYWORDS, 0},

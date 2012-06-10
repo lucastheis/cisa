@@ -226,11 +226,16 @@ void ISA::trainPrior(const MatrixXd& states, const Parameters params) {
 		from[i] = f;
 
 	#pragma omp parallel for
-	for(int i = 0; i < numSubspaces(); ++i)
+	for(int i = 0; i < numSubspaces(); ++i) {
 		mSubspaces[i].train(
 			states.middleRows(from[i], mSubspaces[i].dim()),
 			params.GSM.maxIter,
 			params.GSM.tol);
+
+		// normalize marginal variance
+		mBasis.middleCols(from[i], mSubspaces[i].dim()) *= sqrt(mSubspaces[i].variance());
+		mSubspaces[i].normalize();
+	}
 }
 
 
