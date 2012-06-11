@@ -37,12 +37,15 @@ class ISA : public Distribution {
 					double momentum;
 					bool shuffle;
 					bool pocket;
-				} SGD;
+				} sgd;
 
 				struct {
 					int maxIter;
 					double tol;
-				} GSM;
+				} gsm;
+
+				struct {
+				} gibbs;
 
 				Parameters();
 				Parameters(const Parameters& params);

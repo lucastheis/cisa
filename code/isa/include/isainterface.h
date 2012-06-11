@@ -69,6 +69,8 @@ CallbackTrain& CallbackTrain::operator=(const CallbackTrain& callbackTrain) {
 
 	Py_INCREF(mIsa);
 	Py_INCREF(mCallback);
+
+	return *this;
 }
 
 
@@ -163,86 +165,86 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 			else if(callback != Py_None)
 				throw Exception("callback should be a function or callable object.");
 
-		PyObject* SGD = PyDict_GetItemString(parameters, "SGD");
+		PyObject* sgd = PyDict_GetItemString(parameters, "sgd");
 
-		if(!SGD)
-			SGD = PyDict_GetItemString(parameters, "sgd");
+		if(!sgd)
+			sgd = PyDict_GetItemString(parameters, "SGD");
 
-		if(SGD && PyDict_Check(SGD)) {
-			PyObject* maxIter = PyDict_GetItemString(SGD, "max_iter");
+		if(sgd && PyDict_Check(sgd)) {
+			PyObject* maxIter = PyDict_GetItemString(sgd, "max_iter");
 			if(maxIter)
 				if(PyInt_Check(maxIter))
-					params.SGD.maxIter = PyInt_AsLong(maxIter);
+					params.sgd.maxIter = PyInt_AsLong(maxIter);
 				else if(PyFloat_Check(maxIter))
-					params.SGD.maxIter = static_cast<int>(PyFloat_AsDouble(maxIter));
+					params.sgd.maxIter = static_cast<int>(PyFloat_AsDouble(maxIter));
 				else
-					throw Exception("SGD.max_iter should be of type int.");
+					throw Exception("sgd.max_iter should be of type int.");
 
-			PyObject* batchSize = PyDict_GetItemString(SGD, "batch_size");
+			PyObject* batchSize = PyDict_GetItemString(sgd, "batch_size");
 			if(batchSize)
 				if(PyInt_Check(batchSize))
-					params.SGD.batchSize = PyInt_AsLong(batchSize);
+					params.sgd.batchSize = PyInt_AsLong(batchSize);
 				else if(PyFloat_Check(batchSize))
-					params.SGD.batchSize = static_cast<int>(PyFloat_AsDouble(batchSize));
+					params.sgd.batchSize = static_cast<int>(PyFloat_AsDouble(batchSize));
 				else
-					throw Exception("SGD.batch_size should be of type int.");
+					throw Exception("sgd.batch_size should be of type int.");
 
-			PyObject* stepWidth = PyDict_GetItemString(SGD, "step_width");
+			PyObject* stepWidth = PyDict_GetItemString(sgd, "step_width");
 			if(stepWidth)
 				if(PyFloat_Check(stepWidth))
-					params.SGD.stepWidth = PyFloat_AsDouble(stepWidth);
+					params.sgd.stepWidth = PyFloat_AsDouble(stepWidth);
 				else if(PyInt_Check(stepWidth))
-					params.SGD.stepWidth = static_cast<double>(PyFloat_AsDouble(stepWidth));
+					params.sgd.stepWidth = static_cast<double>(PyFloat_AsDouble(stepWidth));
 				else
-					throw Exception("SGD.step_width should be of type float.");
+					throw Exception("sgd.step_width should be of type float.");
 
-			PyObject* momentum = PyDict_GetItemString(SGD, "momentum");
+			PyObject* momentum = PyDict_GetItemString(sgd, "momentum");
 			if(momentum)
 				if(PyFloat_Check(momentum))
-					params.SGD.momentum = PyFloat_AsDouble(momentum);
+					params.sgd.momentum = PyFloat_AsDouble(momentum);
 				else if(PyInt_Check(momentum))
-					params.SGD.momentum = static_cast<double>(PyInt_AsLong(momentum));
+					params.sgd.momentum = static_cast<double>(PyInt_AsLong(momentum));
 				else
-					throw Exception("SGD.momentum should be of type float.");
+					throw Exception("sgd.momentum should be of type float.");
 
-			PyObject* shuffle = PyDict_GetItemString(SGD, "shuffle");
+			PyObject* shuffle = PyDict_GetItemString(sgd, "shuffle");
 			if(shuffle)
 				if(PyBool_Check(shuffle))
-					params.SGD.shuffle = (shuffle == Py_True);
+					params.sgd.shuffle = (shuffle == Py_True);
 				else
-					throw Exception("SGD.shuffle should be of type bool.");
+					throw Exception("sgd.shuffle should be of type bool.");
 
-			PyObject* pocket = PyDict_GetItemString(SGD, "pocket");
+			PyObject* pocket = PyDict_GetItemString(sgd, "pocket");
 			if(pocket)
 				if(PyBool_Check(pocket))
-					params.SGD.pocket = (pocket == Py_True);
+					params.sgd.pocket = (pocket == Py_True);
 				else
-					throw Exception("SGD.pocket should be of type bool.");
+					throw Exception("sgd.pocket should be of type bool.");
 		}
 
-		PyObject* GSM = PyDict_GetItemString(parameters, "GSM");
+		PyObject* gsm = PyDict_GetItemString(parameters, "gsm");
 
-		if(!GSM)
-			GSM = PyDict_GetItemString(parameters, "gsm");
+		if(!gsm)
+			gsm = PyDict_GetItemString(parameters, "GSM");
 
-		if(GSM && PyDict_Check(GSM)) {
-			PyObject* maxIter = PyDict_GetItemString(GSM, "max_iter");
+		if(gsm && PyDict_Check(gsm)) {
+			PyObject* maxIter = PyDict_GetItemString(gsm, "max_iter");
 			if(maxIter)
 				if(PyInt_Check(maxIter))
-					params.GSM.maxIter = PyInt_AsLong(maxIter);
+					params.gsm.maxIter = PyInt_AsLong(maxIter);
 				else if(PyFloat_Check(maxIter))
-					params.GSM.maxIter = static_cast<int>(PyFloat_AsDouble(maxIter));
+					params.gsm.maxIter = static_cast<int>(PyFloat_AsDouble(maxIter));
 				else
-					throw Exception("GSM.max_iter should be of type int.");
+					throw Exception("gsm.max_iter should be of type int.");
 
-			PyObject* tol = PyDict_GetItemString(GSM, "tol");
+			PyObject* tol = PyDict_GetItemString(gsm, "tol");
 			if(tol)
 				if(PyFloat_Check(tol))
-					params.GSM.tol = PyFloat_AsDouble(tol);
+					params.gsm.tol = PyFloat_AsDouble(tol);
 				else if(PyInt_Check(tol))
-					params.GSM.tol = static_cast<double>(PyInt_AsLong(tol));
+					params.gsm.tol = static_cast<double>(PyInt_AsLong(tol));
 				else
-					throw Exception("GSM.tol should be of type float.");
+					throw Exception("gsm.tol should be of type float.");
 		}
 	}
 
@@ -367,7 +369,7 @@ static PyObject* ISA_subspaces(ISAObject* self, PyObject*, void*) {
 
 	PyObject* list = PyList_New(subspaces.size());
 
-	for(int i = 0; i < subspaces.size(); ++i) {
+	for(unsigned int i = 0; i < subspaces.size(); ++i) {
 		// create Python object representing GSM
 		PyObject* gsmObj = _PyObject_New(&GSM_type);
 		reinterpret_cast<GSMObject*>(gsmObj)->gsm = new GSM(subspaces[i]);
@@ -383,8 +385,8 @@ static PyObject* ISA_subspaces(ISAObject* self, PyObject*, void*) {
 static PyObject* ISA_default_parameters(ISAObject* self) {
 	ISA::Parameters params;
 	PyObject* parameters = PyDict_New();
-	PyObject* SGD = PyDict_New();
-	PyObject* GSM = PyDict_New();
+	PyObject* sgd = PyDict_New();
+	PyObject* gsm = PyDict_New();
 
 	PyDict_SetItemString(parameters, "verbosity", PyInt_FromLong(params.verbosity));
 	PyDict_SetItemString(parameters, "training_method",
@@ -411,32 +413,32 @@ static PyObject* ISA_default_parameters(ISAObject* self) {
 		Py_INCREF(Py_False);
 	}
 
-	PyDict_SetItemString(SGD, "max_iter", PyInt_FromLong(params.SGD.maxIter));
-	PyDict_SetItemString(SGD, "batch_size", PyInt_FromLong(params.SGD.batchSize));
-	PyDict_SetItemString(SGD, "step_width", PyFloat_FromDouble(params.SGD.stepWidth));
-	PyDict_SetItemString(SGD, "momentum", PyFloat_FromDouble(params.SGD.momentum));
+	PyDict_SetItemString(sgd, "max_iter", PyInt_FromLong(params.sgd.maxIter));
+	PyDict_SetItemString(sgd, "batch_size", PyInt_FromLong(params.sgd.batchSize));
+	PyDict_SetItemString(sgd, "step_width", PyFloat_FromDouble(params.sgd.stepWidth));
+	PyDict_SetItemString(sgd, "momentum", PyFloat_FromDouble(params.sgd.momentum));
 
-	if(params.SGD.shuffle) {
-		PyDict_SetItemString(SGD, "shuffle", Py_True);
+	if(params.sgd.shuffle) {
+		PyDict_SetItemString(sgd, "shuffle", Py_True);
 		Py_INCREF(Py_True);
 	} else {
-		PyDict_SetItemString(SGD, "shuffle", Py_False);
+		PyDict_SetItemString(sgd, "shuffle", Py_False);
 		Py_DECREF(Py_False);
 	}
 
-	if(params.SGD.pocket) {
-		PyDict_SetItemString(SGD, "pocket", Py_True);
+	if(params.sgd.pocket) {
+		PyDict_SetItemString(sgd, "pocket", Py_True);
 		Py_INCREF(Py_True);
 	} else {
-		PyDict_SetItemString(SGD, "pocket", Py_False);
+		PyDict_SetItemString(sgd, "pocket", Py_False);
 		Py_DECREF(Py_False);
 	}
 
-	PyDict_SetItemString(GSM, "max_iter", PyInt_FromLong(params.GSM.maxIter));
-	PyDict_SetItemString(GSM, "tol", PyFloat_FromDouble(params.GSM.tol));
+	PyDict_SetItemString(gsm, "max_iter", PyInt_FromLong(params.gsm.maxIter));
+	PyDict_SetItemString(gsm, "tol", PyFloat_FromDouble(params.gsm.tol));
 
-	PyDict_SetItemString(parameters, "SGD", SGD);
-	PyDict_SetItemString(parameters, "GSM", GSM);
+	PyDict_SetItemString(parameters, "sgd", sgd);
+	PyDict_SetItemString(parameters, "gsm", gsm);
 
 	return parameters;
 }

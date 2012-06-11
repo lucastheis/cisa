@@ -98,8 +98,8 @@ class Tests(unittest.TestCase):
 		params['verbosity'] = 0
 		params['max_iter'] = 2
 		params['training_method'] = 'SGD'
-		params['SGD']['max_iter'] = 1
-		params['SGD']['batch_size'] = 57
+		params['sgd']['max_iter'] = 1
+		params['sgd']['batch_size'] = 57
 
 		isa.initialize(randn(2, 1000))
 		isa.train(randn(2, 1000), params)
@@ -182,7 +182,7 @@ class Tests(unittest.TestCase):
 				'verbosity': 0,
 				'max_iter': 7,
 				'callback': callback,
-				'SGD': {'max_iter': 0}
+				'sgd': {'max_iter': 0}
 			}
 
 		isa.train(randn(2, 1000), parameters=parameters)

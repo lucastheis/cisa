@@ -21,6 +21,7 @@ modules = [
 			'-lgomp'],
 		extra_compile_args=[
 			'-fopenmp',
+			'-Wno-parentheses',
 			'-Wno-write-strings'])]
 
 setup(

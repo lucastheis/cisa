@@ -60,15 +60,15 @@ ISA::Parameters::Parameters() {
 	trainPrior = true;
 	callback = 0;
 
-	SGD.maxIter = 1;
-	SGD.batchSize = 100;
-	SGD.stepWidth = 0.005;
-	SGD.momentum = 0.8;
-	SGD.shuffle = true;
-	SGD.pocket = true;
+	sgd.maxIter = 1;
+	sgd.batchSize = 100;
+	sgd.stepWidth = 0.005;
+	sgd.momentum = 0.8;
+	sgd.shuffle = true;
+	sgd.pocket = true;
 
-	GSM.maxIter = 10;
-	GSM.tol = 1e-8;
+	gsm.maxIter = 10;
+	gsm.tol = 1e-8;
 }
 
 
@@ -81,8 +81,8 @@ ISA::Parameters::Parameters(const Parameters& params) :
 	adaptive(params.adaptive),
 	trainPrior(params.trainPrior),
 	callback(0),
-	SGD(params.SGD),
-	GSM(params.GSM)
+	sgd(params.sgd),
+	gsm(params.gsm)
 {
 	if(params.callback)
 		callback = params.callback->copy();
@@ -105,8 +105,8 @@ ISA::Parameters& ISA::Parameters::operator=(const Parameters& params) {
 	adaptive = params.adaptive;
 	trainPrior = params.trainPrior;
 	callback = params.callback ? params.callback->copy() : 0;
-	SGD = params.SGD;
-	GSM = params.GSM;
+	sgd = params.sgd;
+	gsm = params.gsm;
 
 	return *this;
 }
@@ -249,13 +249,13 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 			if(complete())
 				cout << setw(14) << fixed << setprecision(7) << evaluate(data);
 			if(params.adaptive)
-				cout << setw(14) << fixed << setprecision(7) << params.SGD.stepWidth;
+				cout << setw(14) << fixed << setprecision(7) << params.sgd.stepWidth;
 			cout << endl;
 		}
 
 		if(params.adaptive)
 			// adapt step width
-			params.SGD.stepWidth *= improved ? 1.1 : 0.5;
+			params.sgd.stepWidth *= improved ? 1.1 : 0.5;
 	}
 }
 
@@ -270,8 +270,8 @@ void ISA::trainPrior(const MatrixXd& states, const Parameters params) {
 	for(int i = 0; i < numSubspaces(); ++i) {
 		mSubspaces[i].train(
 			states.middleRows(from[i], mSubspaces[i].dim()),
-			params.GSM.maxIter,
-			params.GSM.tol);
+			params.gsm.maxIter,
+			params.gsm.tol);
 
 		// normalize marginal variance
 		mBasis.middleCols(from[i], mSubspaces[i].dim()) *= sqrt(mSubspaces[i].variance());
@@ -298,16 +298,16 @@ bool ISA::trainSGD(
 	double logDet = basisLU.matrixLU().diagonal().array().abs().log().sum();
 	double energy = priorEnergy(W * complData).array().mean() + logDet;
 
-	for(int i = 0; i < params.SGD.maxIter; ++i) {
-		for(int j = 0; j + params.SGD.batchSize <= complData.cols(); j += params.SGD.batchSize) {
-			X = complData.middleCols(j, params.SGD.batchSize);
+	for(int i = 0; i < params.sgd.maxIter; ++i) {
+		for(int j = 0; j + params.sgd.batchSize <= complData.cols(); j += params.sgd.batchSize) {
+			X = complData.middleCols(j, params.sgd.batchSize);
 
 			// update momentum with natural gradient
-			P = params.SGD.momentum * P + W
-				- priorEnergyGradient(W * X) * X.transpose() / params.SGD.batchSize * (W.transpose() * W);
+			P = params.sgd.momentum * P + W
+				- priorEnergyGradient(W * X) * X.transpose() / params.sgd.batchSize * (W.transpose() * W);
 
 			// update filter matrix
-			W += params.SGD.stepWidth * P;
+			W += params.sgd.stepWidth * P;
 		}
 	}
 
@@ -318,7 +318,7 @@ bool ISA::trainSGD(
 	double logDetNew = filterLU.matrixLU().diagonal().array().abs().log().sum();
 	double energyNew = priorEnergy(W * complData).array().mean() - logDetNew;
 
-	if(params.SGD.pocket && energy < energyNew)
+	if(params.sgd.pocket && energy < energyNew)
 		// don't update basis
 		return false;
 
@@ -352,8 +352,9 @@ MatrixXd ISA::sampleNullspace(const MatrixXd& data, const Parameters params) {
 	if(data.rows() != numVisibles())
 		throw Exception("Data has wrong dimensionality.");
 
-	// TODO: implement Gibbs sampling
-	return nullspaceBasis() * samplePrior(data.cols());
+	MatrixXd scales;
+
+	
 }
 
 
