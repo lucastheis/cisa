@@ -59,6 +59,7 @@ ISA::Parameters::Parameters() {
 	adaptive = true;
 	trainPrior = true;
 	callback = 0;
+	persistent = true;
 
 	sgd.maxIter = 1;
 	sgd.batchSize = 100;
@@ -69,6 +70,9 @@ ISA::Parameters::Parameters() {
 
 	gsm.maxIter = 10;
 	gsm.tol = 1e-8;
+
+	gibbs.iniIter = 10;
+	gibbs.numIter = 2;
 }
 
 
@@ -80,9 +84,11 @@ ISA::Parameters::Parameters(const Parameters& params) :
 	maxIter(params.maxIter),
 	adaptive(params.adaptive),
 	trainPrior(params.trainPrior),
+	persistent(params.persistent),
 	callback(0),
 	sgd(params.sgd),
-	gsm(params.gsm)
+	gsm(params.gsm),
+	gibbs(params.gibbs)
 {
 	if(params.callback)
 		callback = params.callback->copy();
@@ -104,9 +110,11 @@ ISA::Parameters& ISA::Parameters::operator=(const Parameters& params) {
 	maxIter = params.maxIter;
 	adaptive = params.adaptive;
 	trainPrior = params.trainPrior;
+	persistent = params.persistent;
 	callback = params.callback ? params.callback->copy() : 0;
 	sgd = params.sgd;
 	gsm = params.gsm;
+	gibbs = params.gibbs;
 
 	return *this;
 }
@@ -135,6 +143,7 @@ ISA::~ISA() {
 
 
 MatrixXd ISA::nullspaceBasis() {
+	// TODO: JacobiSVD is slow, can we replace it with something faster?
 	JacobiSVD<MatrixXd> svd(basis(), ComputeFullV);
 	return svd.matrixV().rightCols(numHiddens() - numVisibles()).transpose();
 }
@@ -348,25 +357,66 @@ MatrixXd ISA::samplePrior(int numSamples) {
 
 
 
-MatrixXd ISA::sampleNullspace(const MatrixXd& data, const Parameters params) {
-	if(data.rows() != numVisibles())
-		throw Exception("Data has wrong dimensionality.");
+MatrixXd ISA::sampleScales(const MatrixXd& states) {
+	if(states.rows() != numHiddens())
+		throw Exception("Hidden states have wrong dimensionality.");
 
-	MatrixXd scales;
+	MatrixXd scales = MatrixXd::Zero(states.rows(), states.cols());
 
-	
+	int from[numSubspaces()];
+	for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
+		from[i] = f;
+
+	#pragma omp parallel for
+	for(int i = 0; i < numSubspaces(); ++i)
+		scales.middleRows(from[i], mSubspaces[i].dim()).rowwise() =
+			mSubspaces[i].samplePosterior(states.middleRows(from[i], mSubspaces[i].dim())).matrix();
+
+	return scales;
 }
 
 
 
 MatrixXd ISA::samplePosterior(const MatrixXd& data, const Parameters params) {
-	MatrixXd complData(numHiddens(), data.cols());
-	MatrixXd complBasis(numHiddens(), numHiddens());
+	if(data.rows() != numVisibles())
+		throw Exception("Data has wrong dimensionality.");
 
-	complData << data, sampleNullspace(data);
-	complBasis << basis(), nullspaceBasis();
+	// variances, hidden and visible states
+	MatrixXd v;
+	MatrixXd Y;
+	MatrixXd X;
 
-	return complBasis.inverse() * complData;
+	// nullspace basis and basis
+	const MatrixXd& A = mBasis;
+	const MatrixXd B = nullspaceBasis();
+	const MatrixXd At = A.transpose();
+	const MatrixXd Bt = B.transpose();
+
+	// nullspace projection matrix
+	MatrixXd Q = Bt * (B * Bt).llt().solve(B);
+
+	MatrixXd WX = At * (A * At).llt().solve(X);
+
+	for(int i = 0; i < params.gibbs.numIter; ++i) {
+		v = sampleScales(states).square();
+
+		Y = sampleNormal(numHiddens(), data.cols()) * v.array();
+		X = data - basis() * Y;
+
+		#pragma omp parallel for
+		for(int j = 0; j < data.cols(); ++j) {
+			MatrixXd vAt = v.col(j).asDiagonal() * At;
+			Y.col(j) = WX.col(j) + Q * (Y.col(j) + vAt * (A * vAt).llt().solve(X.col(j)));
+		}
+	}
+
+	return Y;
+}
+
+
+
+MatrixXd ISA::sampleNullspace(const MatrixXd& data, const Parameters params) {
+	return nullspaceBasis() * samplePosterior(data, params);
 }
 
 

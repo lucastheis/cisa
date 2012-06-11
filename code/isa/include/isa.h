@@ -28,6 +28,7 @@ class ISA : public Distribution {
 				int maxIter;
 				bool adaptive;
 				bool trainPrior;
+				bool persistent;
 				Callback* callback;
 
 				struct {
@@ -45,6 +46,8 @@ class ISA : public Distribution {
 				} gsm;
 
 				struct {
+					int iniIter;
+					int numIter;
 				} gibbs;
 
 				Parameters();
@@ -82,8 +85,9 @@ class ISA : public Distribution {
 
 		virtual MatrixXd sample(int numSamples = 1);
 		virtual MatrixXd samplePrior(int numSamples = 1);
-		virtual MatrixXd sampleNullspace(const MatrixXd& data, const Parameters params = Parameters());
+		virtual MatrixXd sampleScales(const MatrixXd& states);
 		virtual MatrixXd samplePosterior(const MatrixXd& data, const Parameters params = Parameters());
+		virtual MatrixXd sampleNullspace(const MatrixXd& data, const Parameters params = Parameters());
 
 		virtual MatrixXd priorEnergy(const MatrixXd& states);
 		virtual MatrixXd priorEnergyGradient(const MatrixXd& states);
