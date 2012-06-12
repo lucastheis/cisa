@@ -3,6 +3,7 @@ import unittest
 
 sys.path.append('./code')
 sys.path.append('./build/lib.macosx-10.6-intel-2.7')
+sys.path.append('./build/lib.linux-x86_64-2.7')
 
 from isa import ISA
 from numpy import sqrt, sum, square, dot, var, eye, cov, diag, std, max
@@ -206,6 +207,23 @@ class Tests(unittest.TestCase):
 		# make sure referece counts stay stable
 		self.assertEqual(sys.getrefcount(isa) - 1, 1)
 		self.assertEqual(sys.getrefcount(callback) - 1, 2)
+
+
+
+	def test_sample_scales(self):
+		isa = ISA(2, 5, num_scales = 4)
+
+		subspaces = isa.subspaces
+
+		for gsm in subspaces:
+			subspaces[i]
+
+		samples = isa.sample_prior(1000)
+		scales = isa.sample_scales(samples)
+
+		# simple sanity checks
+		self.assertEqual(scales.shape[0], isa.num_hiddens)
+		self.assertEqual(scales.shape[1], samples.shape[1])
 
 
 

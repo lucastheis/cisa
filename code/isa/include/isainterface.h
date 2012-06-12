@@ -382,6 +382,35 @@ static PyObject* ISA_subspaces(ISAObject* self, PyObject*, void*) {
 
 
 
+static int ISA_set_subspaces(ISAObject* self, PyObject* value, void*) {
+	if(!PyList_Check(value)) {
+		PyErr_SetString(PyExc_TypeError, "Subspace GSMs should be stored in a list.");
+		return -1;
+	}
+
+	try {
+		vector<GSM> subspaces;
+
+		for(Py_ssize_t i = 0; i < PyList_Size(value); ++i) {
+			PyObject* gsmObj = PyList_GetItem(value, i);
+
+			if(!PyObject_IsInstance(gsmObj, reinterpret_cast<PyObject*>(&GSM_type))) {
+				PyErr_SetString(PyExc_TypeError, "Subspaces should be modeled by GSMs.");
+				return -1;
+			}
+
+			
+		}
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_TypeError, exception.message());
+		return -1;
+	}
+
+	return 0;
+}
+
+
+
 static PyObject* ISA_default_parameters(ISAObject* self) {
 	ISA::Parameters params;
 	PyObject* parameters = PyDict_New();
@@ -608,6 +637,31 @@ static PyObject* ISA_sample_posterior(ISAObject* self, PyObject* args, PyObject*
 
 
 
+static PyObject* ISA_sample_scales(ISAObject* self, PyObject* args, PyObject* kwds) {
+	char* kwlist[] = {"states", 0};
+
+	PyObject* states;
+
+	// read arguments
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &states))
+		return 0;
+
+	// make sure data is stored in NumPy array
+	if(!PyArray_Check(states)) {
+		PyErr_SetString(PyExc_TypeError, "Hidden states have to be stored in a NumPy array.");
+		return 0;
+	}
+
+	try {
+		return PyArray_FromMatrixXd(self->isa->sampleScales(PyArray_ToMatrixXd(states)));
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+}
+
+
+
 static PyObject* ISA_prior_energy(ISAObject* self, PyObject* args, PyObject* kwds) {
 	char* kwlist[] = {"states", 0};
 
@@ -702,6 +756,7 @@ static PyMethodDef ISA_methods[] = {
 	{"sample_prior", (PyCFunction)ISA_sample_prior, METH_VARARGS|METH_KEYWORDS, 0},
 	{"sample_nullspace", (PyCFunction)ISA_sample_nullspace, METH_VARARGS|METH_KEYWORDS, 0},
 	{"sample_posterior", (PyCFunction)ISA_sample_posterior, METH_VARARGS|METH_KEYWORDS, 0},
+	{"sample_scales", (PyCFunction)ISA_sample_scales, METH_VARARGS|METH_KEYWORDS, 0},
 	{"prior_energy", (PyCFunction)ISA_prior_energy, METH_VARARGS|METH_KEYWORDS, 0},
 	{"prior_energy_gradient", (PyCFunction)ISA_prior_energy_gradient, METH_VARARGS|METH_KEYWORDS, 0},
 	{"loglikelihood", (PyCFunction)ISA_loglikelihood, METH_VARARGS|METH_KEYWORDS, 0},

@@ -2,6 +2,7 @@
 #include "Eigen/LU"
 #include "Eigen/SVD"
 #include "Eigen/Eigenvalues"
+#include "utils.h"
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
@@ -398,7 +399,7 @@ MatrixXd ISA::samplePosterior(const MatrixXd& data, const Parameters params) {
 	MatrixXd WX = At * (A * At).llt().solve(X);
 
 	for(int i = 0; i < params.gibbs.numIter; ++i) {
-		v = sampleScales(states).square();
+		v = sampleScales(Y).array().square();
 
 		Y = sampleNormal(numHiddens(), data.cols()) * v.array();
 		X = data - basis() * Y;
