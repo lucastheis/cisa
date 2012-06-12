@@ -72,6 +72,7 @@ ISA::Parameters::Parameters() {
 	gsm.maxIter = 10;
 	gsm.tol = 1e-8;
 
+	gibbs.verbosity = 0;
 	gibbs.iniIter = 10;
 	gibbs.numIter = 2;
 }
@@ -398,17 +399,23 @@ MatrixXd ISA::samplePosterior(const MatrixXd& data, const Parameters params) {
 
 	MatrixXd WX = At * (A * At).llt().solve(X);
 
-	for(int i = 0; i < params.gibbs.numIter; ++i) {
-		v = sampleScales(Y).array().square();
+	Y = WX + Q * samplePrior(data.cols());
 
+	for(int i = 0; i < params.gibbs.numIter; ++i) {
+		// sample scales
+		v = sampleScales(Y).array().square();
+		
+		// sample nullspace representations
 		Y = sampleNormal(numHiddens(), data.cols()) * v.array();
 		X = data - basis() * Y;
 
-		#pragma omp parallel for
-		for(int j = 0; j < data.cols(); ++j) {
-			MatrixXd vAt = v.col(j).asDiagonal() * At;
-			Y.col(j) = WX.col(j) + Q * (Y.col(j) + vAt * (A * vAt).llt().solve(X.col(j)));
-		}
+ 		for(int j = 0; j < data.cols(); ++j) {
+ 			MatrixXd vAt = v.col(j).asDiagonal() * At;
+ 			Y.col(j) = WX.col(j) + Q * (Y.col(j) + vAt * (A * vAt).llt().solve(X.col(j)));
+ 		}
+
+		if(params.gibbs.verbosity > 0)
+			cout << setw(4) << i << setw(12) << fixed << setprecision(4) << priorEnergy(Y).mean() << endl;
 	}
 
 	return Y;

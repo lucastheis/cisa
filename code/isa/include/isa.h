@@ -46,6 +46,7 @@ class ISA : public Distribution {
 				} gsm;
 
 				struct {
+					int verbosity;
 					int iniIter;
 					int numIter;
 				} gibbs;

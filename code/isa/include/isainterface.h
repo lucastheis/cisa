@@ -246,6 +246,37 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 				else
 					throw Exception("gsm.tol should be of type `float`.");
 		}
+
+		PyObject* gibbs = PyDict_GetItemString(parameters, "gibbs");
+
+		if(!gibbs)
+			gibbs = PyDict_GetItemString(parameters, "Gibbs");
+
+		if(!gibbs)
+			gibbs = PyDict_GetItemString(parameters, "GIBBS");
+
+		if(gibbs && PyDict_Check(gibbs)) {
+			PyObject* verbosity = PyDict_GetItemString(gibbs, "verbosity");
+			if(verbosity)
+				if(PyInt_Check(verbosity))
+					params.gibbs.verbosity = PyInt_AsLong(verbosity);
+				else
+					throw Exception("gibbs.verbosity should be of type `int`.");
+
+			PyObject* ini_iter = PyDict_GetItemString(gibbs, "ini_iter");
+			if(ini_iter)
+				if(PyInt_Check(ini_iter))
+					params.gibbs.iniIter = PyInt_AsLong(ini_iter);
+				else
+					throw Exception("gibbs.ini_iter should be of type `int`.");
+
+			PyObject* num_iter = PyDict_GetItemString(gibbs, "num_iter");
+			if(ini_iter)
+				if(PyInt_Check(num_iter))
+					params.gibbs.numIter = PyInt_AsLong(num_iter);
+				else
+					throw Exception("gibbs.num_iter should be of type `int`.");
+		}
 	}
 
 	return params;
@@ -484,6 +515,7 @@ static PyObject* ISA_default_parameters(ISAObject* self) {
 	PyObject* parameters = PyDict_New();
 	PyObject* sgd = PyDict_New();
 	PyObject* gsm = PyDict_New();
+	PyObject* gibbs = PyDict_New();
 
 	PyDict_SetItemString(parameters, "verbosity", PyInt_FromLong(params.verbosity));
 	PyDict_SetItemString(parameters, "training_method",
@@ -534,8 +566,13 @@ static PyObject* ISA_default_parameters(ISAObject* self) {
 	PyDict_SetItemString(gsm, "max_iter", PyInt_FromLong(params.gsm.maxIter));
 	PyDict_SetItemString(gsm, "tol", PyFloat_FromDouble(params.gsm.tol));
 
+	PyDict_SetItemString(gibbs, "verbosity", PyInt_FromLong(params.gibbs.verbosity));
+	PyDict_SetItemString(gibbs, "ini_iter", PyInt_FromLong(params.gibbs.iniIter));
+	PyDict_SetItemString(gibbs, "num_iter", PyInt_FromLong(params.gibbs.numIter));
+
 	PyDict_SetItemString(parameters, "sgd", sgd);
 	PyDict_SetItemString(parameters, "gsm", gsm);
+	PyDict_SetItemString(parameters, "gibbs", gibbs);
 
 	return parameters;
 }
