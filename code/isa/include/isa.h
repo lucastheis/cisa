@@ -66,7 +66,7 @@ class ISA : public Distribution {
 		inline int numSubspaces();
 
 		inline vector<GSM> subspaces();
-		inline setSubspaces(vector<GSM>);
+		inline void setSubspaces(vector<GSM> subspaces);
 
 		inline MatrixXd basis();
 		inline void setBasis(const MatrixXd& basis);
@@ -143,7 +143,7 @@ inline vector<GSM> ISA::subspaces() {
 inline void ISA::setSubspaces(vector<GSM> subspaces) {
 	int dim = 0;
 	for(size_t i = 0; i < subspaces.size(); ++i)
-		dim += subspaces[i].dim()
+		dim += subspaces[i].dim();
 
 	if(dim != numHiddens())
 		throw Exception("Subspace dimensionality should correspond to the number of hidden units.");

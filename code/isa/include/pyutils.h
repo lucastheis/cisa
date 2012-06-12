@@ -38,6 +38,9 @@ static PyObject* PyArray_FromMatrixXd(const MatrixXd& mat) {
  * Turn a NumPy array into an Eigen matrix.
  */
 static MatrixXd PyArray_ToMatrixXd(PyObject* array) {
+	if(PyArray_DESCR(array)->type != PyArray_DescrFromType(NPY_DOUBLE)->type)
+		throw Exception("Can only handle arrays of double values.");
+
 	if(PyArray_NDIM(array) == 1) {
 		if(PyArray_FLAGS(array) & NPY_F_CONTIGUOUS)
 			return Map<Matrix<double, Dynamic, Dynamic, ColMajor> >(

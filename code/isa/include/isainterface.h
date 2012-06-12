@@ -361,10 +361,66 @@ static int ISA_set_A(ISAObject* self, PyObject* value, void*) {
 
 
 
+static PyObject* ISA_basis(ISAObject* self, PyObject*, PyObject*) {
+	try {
+		return PyArray_FromMatrixXd(self->isa->basis());
+
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+
+	return 0;
+}
+
+
+
+static PyObject* ISA_set_basis(ISAObject* self, PyObject* args, PyObject* kwds) {
+	char* kwlist[] = {"basis", 0};
+
+	PyObject* basis = 0;
+
+	// read arguments
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &basis))
+		return 0;
+
+	if(!PyArray_Check(basis)) {
+		PyErr_SetString(PyExc_TypeError, "Basis should be of type `ndarray`.");
+		return 0;
+	}
+
+	try {
+		self->isa->setBasis(PyArray_ToMatrixXd(basis));
+
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+
+
+static PyObject* ISA_nullspace_basis(ISAObject* self, PyObject* args, PyObject* kwds) {
+	try {
+		return PyArray_FromMatrixXd(self->isa->nullspaceBasis());
+
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+
+	return 0;
+}
+
+
+
 /**
  * Return copy of subspace GSMs.
  */
-static PyObject* ISA_subspaces(ISAObject* self, PyObject*, void*) {
+static PyObject* ISA_subspaces(ISAObject* self, PyObject*, PyObject*) {
 	vector<GSM> subspaces = self->isa->subspaces();
 
 	PyObject* list = PyList_New(subspaces.size());
@@ -382,31 +438,43 @@ static PyObject* ISA_subspaces(ISAObject* self, PyObject*, void*) {
 
 
 
-static int ISA_set_subspaces(ISAObject* self, PyObject* value, void*) {
-	if(!PyList_Check(value)) {
+static PyObject* ISA_set_subspaces(ISAObject* self, PyObject* args, PyObject* kwds) {
+	char* kwlist[] = {"subspaces", 0};
+
+	PyObject* list = 0;
+
+	// read arguments
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &list))
+		return 0;
+
+	if(!PyList_Check(list)) {
 		PyErr_SetString(PyExc_TypeError, "Subspace GSMs should be stored in a list.");
-		return -1;
+		return 0;
 	}
 
 	try {
 		vector<GSM> subspaces;
 
-		for(Py_ssize_t i = 0; i < PyList_Size(value); ++i) {
-			PyObject* gsmObj = PyList_GetItem(value, i);
+		for(Py_ssize_t i = 0; i < PyList_Size(list); ++i) {
+			PyObject* gsmObj = PyList_GetItem(list, i);
 
 			if(!PyObject_IsInstance(gsmObj, reinterpret_cast<PyObject*>(&GSM_type))) {
 				PyErr_SetString(PyExc_TypeError, "Subspaces should be modeled by GSMs.");
-				return -1;
+				return 0;
 			}
 
-			
+			subspaces.push_back(GSM(*reinterpret_cast<GSMObject*>(gsmObj)->gsm));
 		}
+
+		self->isa->setSubspaces(subspaces);
+
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_TypeError, exception.message());
-		return -1;
+		return 0;
 	}
 
-	return 0;
+	Py_INCREF(Py_None);
+	return Py_None;
 }
 
 
@@ -470,17 +538,6 @@ static PyObject* ISA_default_parameters(ISAObject* self) {
 	PyDict_SetItemString(parameters, "gsm", gsm);
 
 	return parameters;
-}
-
-
-
-static PyObject* ISA_nullspace_basis(ISAObject* self, PyObject* args, PyObject* kwds) {
-	try {
-		return PyArray_FromMatrixXd(self->isa->nullspaceBasis());
-	} catch(Exception exception) {
-		PyErr_SetString(PyExc_RuntimeError, exception.message());
-		return 0;
-	}
 }
 
 
@@ -741,7 +798,6 @@ static PyGetSetDef ISA_getset[] = {
 	{"num_visibles", (getter)ISA_num_visibles, 0, 0},
 	{"num_hiddens", (getter)ISA_num_hiddens, 0, 0},
 	{"A", (getter)ISA_A, (setter)ISA_set_A, 0},
-	{"subspaces", (getter)ISA_subspaces, 0, 0},
 	{0}
 };
 
@@ -749,7 +805,11 @@ static PyGetSetDef ISA_getset[] = {
 
 static PyMethodDef ISA_methods[] = {
 	{"default_parameters", (PyCFunction)ISA_default_parameters, METH_VARARGS, 0},
+	{"basis", (PyCFunction)ISA_basis, METH_NOARGS, 0},
+	{"set_basis", (PyCFunction)ISA_set_basis, METH_VARARGS|METH_KEYWORDS, 0},
 	{"nullspace_basis", (PyCFunction)ISA_nullspace_basis, METH_NOARGS, 0},
+	{"subspaces", (PyCFunction)ISA_subspaces, METH_NOARGS, 0},
+	{"set_subspaces", (PyCFunction)ISA_set_subspaces, METH_VARARGS|METH_KEYWORDS, 0},
 	{"initialize", (PyCFunction)ISA_initialize, METH_VARARGS|METH_KEYWORDS, 0},
 	{"train", (PyCFunction)ISA_train, METH_VARARGS|METH_KEYWORDS, 0},
 	{"sample", (PyCFunction)ISA_sample, METH_VARARGS|METH_KEYWORDS, 0},

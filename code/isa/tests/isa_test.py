@@ -6,7 +6,7 @@ sys.path.append('./build/lib.macosx-10.6-intel-2.7')
 sys.path.append('./build/lib.linux-x86_64-2.7')
 
 from isa import ISA
-from numpy import sqrt, sum, square, dot, var, eye, cov, diag, std, max
+from numpy import sqrt, sum, square, dot, var, eye, cov, diag, std, max, asarray, mean
 from numpy.linalg import inv, eig
 from numpy.random import randn
 from scipy.optimize import check_grad
@@ -85,8 +85,8 @@ class Tests(unittest.TestCase):
 		isa = ISA(2, 4, 2)
 
 		# simple sanity checks
-		self.assertEqual(isa.subspaces[0].dim, 2)
-		self.assertEqual(isa.subspaces[1].dim, 2)
+		self.assertEqual(isa.subspaces()[0].dim, 2)
+		self.assertEqual(isa.subspaces()[1].dim, 2)
 
 		self.assertEqual(sys.getrefcount(isa.subspaces), 1)
 
@@ -211,19 +211,29 @@ class Tests(unittest.TestCase):
 
 
 	def test_sample_scales(self):
-		isa = ISA(2, 5, num_scales = 4)
+		isa = ISA(2, 5, num_scales=4)
 
-		subspaces = isa.subspaces
+		# get a copy of subspaces
+		subspaces = isa.subspaces()
 
+		# replace scales
 		for gsm in subspaces:
-			subspaces[i]
+			gsm.scales = asarray([1., 2., 3., 4.])
 
-		samples = isa.sample_prior(1000)
+		isa.set_subspaces(subspaces)
+
+		samples = isa.sample_prior(100000)
 		scales = isa.sample_scales(samples)
 
 		# simple sanity checks
 		self.assertEqual(scales.shape[0], isa.num_hiddens)
 		self.assertEqual(scales.shape[1], samples.shape[1])
+
+		priors = mean(abs(scales.flatten() - asarray([[1., 2., 3., 4.]]).T) < 0.5, 1)
+
+		# prior probabilities of scales should be equal and sum up to one
+		self.assertLess(max(abs(priors - 1. / subspaces[0].num_scales)), 0.01)
+		self.assertLess(abs(sum(priors) - 1.), 1e-10)
 
 
 
