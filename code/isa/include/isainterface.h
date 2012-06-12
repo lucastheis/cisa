@@ -119,21 +119,21 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 			if(PyInt_Check(verbosity))
 				params.verbosity = PyInt_AsLong(verbosity);
 			else
-				throw Exception("verbosity should be of type int.");
+				throw Exception("verbosity should be of type `int`.");
 
 		PyObject* trainingMethod = PyDict_GetItemString(parameters, "training_method");
 		if(trainingMethod)
 			if(PyString_Check(trainingMethod))
 				params.trainingMethod = PyString_AsString(trainingMethod);
 			else
-				throw Exception("training_method should be of type string.");
+				throw Exception("training_method should be of type `string`.");
 
 		PyObject* samplingMethod = PyDict_GetItemString(parameters, "sampling_method");
 		if(samplingMethod)
 			if(PyString_Check(samplingMethod))
 				params.trainingMethod = PyString_AsString(samplingMethod);
 			else
-				throw Exception("sampling_method should be of type string.");
+				throw Exception("sampling_method should be of type `string`.");
 
 		PyObject* maxIter = PyDict_GetItemString(parameters, "max_iter");
 		if(maxIter)
@@ -142,21 +142,21 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 			else if(PyFloat_Check(maxIter))
 				params.maxIter = static_cast<int>(PyFloat_AsDouble(maxIter));
 			else
-				throw Exception("max_iter should be of type int.");
+				throw Exception("max_iter should be of type `int`.");
 
 		PyObject* adaptive = PyDict_GetItemString(parameters, "adaptive");
 		if(adaptive)
 			if(PyBool_Check(adaptive))
 				params.adaptive = (adaptive == Py_True);
 			else
-				throw Exception("adaptive should be of type bool.");
+				throw Exception("adaptive should be of type `bool`.");
 
 		PyObject* trainPrior = PyDict_GetItemString(parameters, "train_prior");
 		if(trainPrior)
 			if(PyBool_Check(trainPrior))
 				params.trainPrior = (trainPrior == Py_True);
 			else
-				throw Exception("train_prior should be of type bool.");
+				throw Exception("train_prior should be of type `bool`.");
 
 		PyObject* callback = PyDict_GetItemString(parameters, "callback");
 		if(callback)
@@ -178,7 +178,7 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 				else if(PyFloat_Check(maxIter))
 					params.sgd.maxIter = static_cast<int>(PyFloat_AsDouble(maxIter));
 				else
-					throw Exception("sgd.max_iter should be of type int.");
+					throw Exception("sgd.max_iter should be of type `int`.");
 
 			PyObject* batchSize = PyDict_GetItemString(sgd, "batch_size");
 			if(batchSize)
@@ -187,7 +187,7 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 				else if(PyFloat_Check(batchSize))
 					params.sgd.batchSize = static_cast<int>(PyFloat_AsDouble(batchSize));
 				else
-					throw Exception("sgd.batch_size should be of type int.");
+					throw Exception("sgd.batch_size should be of type `int`.");
 
 			PyObject* stepWidth = PyDict_GetItemString(sgd, "step_width");
 			if(stepWidth)
@@ -196,7 +196,7 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 				else if(PyInt_Check(stepWidth))
 					params.sgd.stepWidth = static_cast<double>(PyFloat_AsDouble(stepWidth));
 				else
-					throw Exception("sgd.step_width should be of type float.");
+					throw Exception("sgd.step_width should be of type `float`.");
 
 			PyObject* momentum = PyDict_GetItemString(sgd, "momentum");
 			if(momentum)
@@ -205,21 +205,21 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 				else if(PyInt_Check(momentum))
 					params.sgd.momentum = static_cast<double>(PyInt_AsLong(momentum));
 				else
-					throw Exception("sgd.momentum should be of type float.");
+					throw Exception("sgd.momentum should be of type `float`.");
 
 			PyObject* shuffle = PyDict_GetItemString(sgd, "shuffle");
 			if(shuffle)
 				if(PyBool_Check(shuffle))
 					params.sgd.shuffle = (shuffle == Py_True);
 				else
-					throw Exception("sgd.shuffle should be of type bool.");
+					throw Exception("sgd.shuffle should be of type `bool`.");
 
 			PyObject* pocket = PyDict_GetItemString(sgd, "pocket");
 			if(pocket)
 				if(PyBool_Check(pocket))
 					params.sgd.pocket = (pocket == Py_True);
 				else
-					throw Exception("sgd.pocket should be of type bool.");
+					throw Exception("sgd.pocket should be of type `bool`.");
 		}
 
 		PyObject* gsm = PyDict_GetItemString(parameters, "gsm");
@@ -235,7 +235,7 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 				else if(PyFloat_Check(maxIter))
 					params.gsm.maxIter = static_cast<int>(PyFloat_AsDouble(maxIter));
 				else
-					throw Exception("gsm.max_iter should be of type int.");
+					throw Exception("gsm.max_iter should be of type `int`.");
 
 			PyObject* tol = PyDict_GetItemString(gsm, "tol");
 			if(tol)
@@ -244,7 +244,7 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 				else if(PyInt_Check(tol))
 					params.gsm.tol = static_cast<double>(PyInt_AsLong(tol));
 				else
-					throw Exception("gsm.tol should be of type float.");
+					throw Exception("gsm.tol should be of type `float`.");
 		}
 	}
 
