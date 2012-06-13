@@ -161,6 +161,9 @@ inline MatrixXd ISA::basis() {
 
 
 inline void ISA::setBasis(const MatrixXd& basis) {
+	if(basis.rows() != numVisibles() && basis.cols() != numHiddens())
+		throw Exception("Basis has wrong dimensionality.");
+
 	mBasis = basis;
 }
 

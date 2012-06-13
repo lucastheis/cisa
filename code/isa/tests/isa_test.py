@@ -4,11 +4,13 @@ import unittest
 sys.path.append('./code')
 sys.path.append('./build/lib.macosx-10.6-intel-2.7')
 sys.path.append('./build/lib.linux-x86_64-2.7')
+sys.path.append('/Volumes/maranon/Projects/isa/code')
 
 from isa import ISA
+from models import ISA as ISA_
 from numpy import sqrt, sum, square, dot, var, eye, cov, diag, std, max, asarray, mean
 from numpy.linalg import inv, eig
-from numpy.random import randn
+from numpy.random import randn, permutation
 from scipy.optimize import check_grad
 from scipy.stats import kstest, laplace, ks_2samp
 
@@ -73,7 +75,7 @@ class Tests(unittest.TestCase):
 			lambda x: laplace.cdf(x, scale=1. / sqrt(2.)))[1]
 
 		# prior marginals should be roughly Laplace
-		self.assertTrue(p > 0.0001)
+		self.assertGreater(p, 0.0001)
 
 		# test initialization with larger subspaces
 		isa = ISA(5, 10, ssize=2)
@@ -235,9 +237,11 @@ class Tests(unittest.TestCase):
 		self.assertLess(max(abs(priors - 1. / subspaces[0].num_scales)), 0.01)
 		self.assertLess(abs(sum(priors) - 1.), 1e-10)
 
-	
+
+
 	def test_sample_posterior(self):
-		isa = ISA(2, 4, num_scales=5)
+		isa = ISA(2, 3, num_scales=10)
+		isa.A = asarray([[1., 0., 1.], [0., 1., 1.]])
 
 		isa.initialize()
 
@@ -247,18 +251,16 @@ class Tests(unittest.TestCase):
 
 		states_post = isa.sample_posterior(isa.sample(1000), params)
 		states_prio = isa.sample_prior(states_post.shape[1])
+		
+		states_post = states_post.flatten()
+		states_post = states_post[permutation(states_post.size)]
+		states_prio = states_prio.flatten()
+		states_prio = states_prio[permutation(states_prio.size)]
 
-#		from matplotlib.pyplot import figure, plot, show
-#
-#		figure()
-#		plot(states_post[0], states_post[1], '.')
-#		figure()
-#		plot(states_prio[0], states_prio[1], '.')
-#		show()
+		# on average, posterior samples should be distributed like prior samples
+		p = ks_2samp(states_post, states_prio)[1]
 
-		p = ks_2samp(states_post.flatten(), states_prio.flatten())[1]
-   	
-#		print p
+		self.assertGreater(p, 0.0001)
 
 
 

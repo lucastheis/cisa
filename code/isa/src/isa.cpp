@@ -383,7 +383,11 @@ MatrixXd ISA::samplePosterior(const MatrixXd& data, const Parameters params) {
 	if(data.rows() != numVisibles())
 		throw Exception("Data has wrong dimensionality.");
 
-	// variances, hidden and visible states
+	if(complete())
+		return basis().inverse() * data;
+
+	// scales, variances, hidden and visible states
+	MatrixXd S;
 	MatrixXd v;
 	MatrixXd Y;
 	MatrixXd X;
@@ -404,10 +408,11 @@ MatrixXd ISA::samplePosterior(const MatrixXd& data, const Parameters params) {
 
 	for(int i = 0; i < params.gibbs.numIter; ++i) {
 		// sample scales
-		v = sampleScales(Y).array().square();
+		S = sampleScales(Y);
+		v = S.array().square();
 		
 		// sample nullspace representations
-		Y = sampleNormal(numHiddens(), data.cols()) * v.array();
+		Y = sampleNormal(numHiddens(), data.cols()) * S.array();
 		X = data - basis() * Y;
 
 		#pragma omp parallel for
