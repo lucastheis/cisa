@@ -10,7 +10,7 @@ from numpy import sqrt, sum, square, dot, var, eye, cov, diag, std, max, asarray
 from numpy.linalg import inv, eig
 from numpy.random import randn
 from scipy.optimize import check_grad
-from scipy.stats import kstest, laplace
+from scipy.stats import kstest, laplace, ks_2samp
 
 class Tests(unittest.TestCase):
 #	def test_default_parameters(self):
@@ -237,14 +237,28 @@ class Tests(unittest.TestCase):
 
 	
 	def test_sample_posterior(self):
-		isa = ISA(2, 4)
+		isa = ISA(2, 4, num_scales=5)
+
+		isa.initialize()
 
 		params = isa.default_parameters()
 		params['gibbs']['verbosity'] = 1
+		params['gibbs']['num_iter'] = 1000
 
-		samples = isa.sample(1000)
+		states_post = isa.sample_posterior(isa.sample(1000), params)
+		states_prio = isa.sample_prior(states_post.shape[1])
 
-		states = isa.sample_posterior(samples, params)
+		from matplotlib.pyplot import figure, plot, show
+
+		figure()
+		plot(states_post[0], states_post[1], '.')
+		figure()
+		plot(states_prio[0], states_prio[1], '.')
+		show()
+
+		p = ks_2samp(states_post.flatten(), states_prio.flatten())[1]
+   	
+		print p
 
 
 

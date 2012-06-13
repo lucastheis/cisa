@@ -397,8 +397,9 @@ MatrixXd ISA::samplePosterior(const MatrixXd& data, const Parameters params) {
 	// nullspace projection matrix
 	MatrixXd Q = Bt * (B * Bt).llt().solve(B);
 
-	MatrixXd WX = At * (A * At).llt().solve(X);
+	MatrixXd WX = At * (A * At).llt().solve(data);
 
+	// initialize Markov chain
 	Y = WX + Q * samplePrior(data.cols());
 
 	for(int i = 0; i < params.gibbs.numIter; ++i) {
@@ -409,9 +410,10 @@ MatrixXd ISA::samplePosterior(const MatrixXd& data, const Parameters params) {
 		Y = sampleNormal(numHiddens(), data.cols()) * v.array();
 		X = data - basis() * Y;
 
+		#pragma omp parallel for
  		for(int j = 0; j < data.cols(); ++j) {
  			MatrixXd vAt = v.col(j).asDiagonal() * At;
- 			Y.col(j) = WX.col(j) + Q * (Y.col(j) + vAt * (A * vAt).llt().solve(X.col(j)));
+  			Y.col(j) = WX.col(j) + Q * (Y.col(j) + vAt * (A * vAt).llt().solve(X.col(j)));
  		}
 
 		if(params.gibbs.verbosity > 0)
