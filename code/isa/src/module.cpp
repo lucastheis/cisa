@@ -40,7 +40,7 @@ static PyMethodDef ISA_methods[] = {
 
 
 
-static PyTypeObject ISA_type = {
+PyTypeObject ISA_type = {
 	PyObject_HEAD_INIT(0)
 	0,                         /*ob_size*/
 	"isa.ISA",                 /*tp_name*/
@@ -108,7 +108,7 @@ static PyMethodDef GSM_methods[] = {
 
 
 
-static PyTypeObject GSM_type = {
+PyTypeObject GSM_type = {
 	PyObject_HEAD_INIT(0)
 	0,                         /*ob_size*/
 	"isa.GSM",                 /*tp_name*/

@@ -14,6 +14,8 @@ struct GSMObject {
 	GSM* gsm;
 };
 
+extern PyTypeObject GSM_type;
+
 PyObject* GSM_new(PyTypeObject* type, PyObject* args, PyObject* kwds);
 int GSM_init(GSMObject* self, PyObject* args, PyObject* kwds);
 void GSM_dealloc(GSMObject* self);

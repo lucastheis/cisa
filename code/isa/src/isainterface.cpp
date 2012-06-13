@@ -332,15 +332,15 @@ PyObject* ISA_nullspace_basis(ISAObject* self, PyObject* args, PyObject* kwds) {
 PyObject* ISA_subspaces(ISAObject* self, PyObject*, PyObject*) {
 	vector<GSM> subspaces = self->isa->subspaces();
 
-	PyObject* list = PyList_New(0);//subspaces.size());
+	PyObject* list = PyList_New(subspaces.size());
 
-// 	for(unsigned int i = 0; i < subspaces.size(); ++i) {
-// 		// create Python object representing GSM
-// 		PyObject* gsmObj = _PyObject_New(&GSM_type);
-// 		reinterpret_cast<GSMObject*>(gsmObj)->gsm = new GSM(subspaces[i]);
-// 
-// 		PyList_SetItem(list, i, gsmObj);
-// 	}
+ 	for(unsigned int i = 0; i < subspaces.size(); ++i) {
+ 		// create Python object representing GSM
+ 		PyObject* gsmObj = _PyObject_New(&GSM_type);
+ 		reinterpret_cast<GSMObject*>(gsmObj)->gsm = new GSM(subspaces[i]);
+ 
+ 		PyList_SetItem(list, i, gsmObj);
+ 	}
 
 	return list;
 }
@@ -365,14 +365,14 @@ PyObject* ISA_set_subspaces(ISAObject* self, PyObject* args, PyObject* kwds) {
 		vector<GSM> subspaces;
 
 		for(Py_ssize_t i = 0; i < PyList_Size(list); ++i) {
-// 			PyObject* gsmObj = PyList_GetItem(list, i);
-// 
-// 			if(!PyObject_IsInstance(gsmObj, reinterpret_cast<PyObject*>(&GSM_type))) {
-// 				PyErr_SetString(PyExc_TypeError, "Subspaces should be modeled by GSMs.");
-// 				return 0;
-// 			}
+ 			PyObject* gsmObj = PyList_GetItem(list, i);
+ 
+ 			if(!PyObject_IsInstance(gsmObj, reinterpret_cast<PyObject*>(&GSM_type))) {
+ 				PyErr_SetString(PyExc_TypeError, "Subspaces should be modeled by GSMs.");
+ 				return 0;
+ 			}
 
-			subspaces.push_back(GSM());//*reinterpret_cast<GSMObject*>(gsmObj)->gsm));
+			subspaces.push_back(*reinterpret_cast<GSMObject*>(gsmObj)->gsm);
 		}
 
 		self->isa->setSubspaces(subspaces);

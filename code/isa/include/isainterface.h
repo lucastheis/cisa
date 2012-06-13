@@ -13,6 +13,8 @@ struct ISAObject {
 	ISA* isa;
 };
 
+extern PyTypeObject ISA_type;
+
 ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters);
 
 PyObject* ISA_new(PyTypeObject* type, PyObject* args, PyObject* kwds);
