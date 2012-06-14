@@ -4,10 +4,8 @@ import unittest
 sys.path.append('./code')
 sys.path.append('./build/lib.macosx-10.6-intel-2.7')
 sys.path.append('./build/lib.linux-x86_64-2.7')
-sys.path.append('/Volumes/maranon/Projects/isa/code')
 
 from isa import ISA
-from models import ISA as ISA_
 from numpy import sqrt, sum, square, dot, var, eye, cov, diag, std, max, asarray, mean
 from numpy.linalg import inv, eig
 from numpy.random import randn, permutation
@@ -110,6 +108,15 @@ class Tests(unittest.TestCase):
 		isa = ISA(4, ssize=2)
 		isa.initialize(randn(4, 1000))
 		isa.train(randn(4, 1000), params)
+
+		isa = ISA(2, 3)
+		params['gibbs']['ini_iter'] = 2
+		params['gibbs']['num_iter'] = 2
+		params['verbosity'] = 0
+		params['gibbs']['verbosity'] = 0
+		isa.initialize(randn(2, 1000))
+		isa.train(randn(2, 1000), params)
+
 
 
 

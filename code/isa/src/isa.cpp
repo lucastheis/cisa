@@ -187,9 +187,6 @@ void ISA::initialize(const MatrixXd& data) {
 
 
 void ISA::train(const MatrixXd& data, Parameters params) {
-	if(!complete())
-		throw Exception("Training of overcomplete models not implemented yet.");
-
 	if(data.rows() != numVisibles())
 		throw Exception("Data has wrong dimensionality.");
 
@@ -207,13 +204,31 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 		cout << endl;
 	}
 
+	// initialize hidden states
+	Parameters iniParams = params;
+	iniParams.gibbs.numIter = iniParams.gibbs.iniIter;
+
+	mHiddenStates = samplePosterior(data, iniParams);
+
 	for(int i = 0; i < params.maxIter; ++i) {
-		// optimize basis
-		bool improved = trainSGD(data, basis(), params);
+		MatrixXd complBasis(numHiddens(), numHiddens());
+		MatrixXd complData(numHiddens(), data.cols());
+
+		// sample hidden states
+		mHiddenStates = params.persistent ?
+			samplePosterior(data, mHiddenStates, params) :
+			samplePosterior(data, params);
+
+		// completed basis and data
+		complBasis << basis(), nullspaceBasis();
+		complData << data, nullspaceBasis() * mHiddenStates;
 
 		if(params.trainPrior)
 			// optimize marginal distributions
-			trainPrior(basis().inverse() * data, params);
+			trainPrior(mHiddenStates, params);
+
+		// optimize basis
+		bool improved = trainSGD(complData, complBasis, params);
 
 		if(params.callback)
 			if(!(*params.callback)(i + 1, *this))
@@ -299,7 +314,7 @@ bool ISA::trainSGD(
 		return false;
 
 	// update basis
-	setBasis(filterLU.inverse().leftCols(numHiddens()));
+	setBasis(filterLU.inverse().topRows(numVisibles()));
 
 	return energyNew < energy;
 }
@@ -345,11 +360,20 @@ MatrixXd ISA::sampleScales(const MatrixXd& states) {
 
 
 MatrixXd ISA::samplePosterior(const MatrixXd& data, const Parameters params) {
+	return samplePosterior(data, samplePrior(data.cols()), params);
+}
+
+
+
+MatrixXd ISA::samplePosterior(const MatrixXd& data, const MatrixXd& states, const Parameters params) {
 	if(data.rows() != numVisibles())
 		throw Exception("Data has wrong dimensionality.");
 
 	if(complete())
 		return basis().inverse() * data;
+
+	if(data.cols() != states.cols())
+		throw Exception("The number of hidden states and the number of data points should be equal.");
 
 	// scales, variances, hidden and visible states
 	MatrixXd S, v, Y, X;
@@ -367,7 +391,7 @@ MatrixXd ISA::samplePosterior(const MatrixXd& data, const Parameters params) {
 	MatrixXd WX = At * (A * At).llt().solve(data);
 
 	// initialize Markov chain
-	Y = WX + Q * samplePrior(data.cols());
+	Y = WX + Q * states;
 
 	for(int i = 0; i < params.gibbs.numIter; ++i) {
 		// sample scales
@@ -385,7 +409,7 @@ MatrixXd ISA::samplePosterior(const MatrixXd& data, const Parameters params) {
  		}
 
 		if(params.gibbs.verbosity > 0)
-			cout << setw(4) << i << setw(12) << fixed << setprecision(4) << priorEnergy(Y).mean() << endl;
+			cout << setw(10) << i << setw(12) << fixed << setprecision(4) << priorEnergy(Y).mean() << endl;
 	}
 
 	return Y;
@@ -436,6 +460,9 @@ MatrixXd ISA::priorEnergyGradient(const MatrixXd& states) {
 Array<double, 1, Dynamic> ISA::logLikelihood(const MatrixXd& data) {
 	if(data.rows() != numVisibles())
 		throw Exception("Data has wrong dimensionality.");
+
+	if(!complete())
+		throw Exception("Not implemented yet.");
 
 	// LU decomposition
 	PartialPivLU<MatrixXd> basisLU(mBasis);

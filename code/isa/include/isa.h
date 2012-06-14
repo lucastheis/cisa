@@ -89,6 +89,10 @@ class ISA : public Distribution {
 		virtual MatrixXd sample(int numSamples = 1);
 		virtual MatrixXd samplePrior(int numSamples = 1);
 		virtual MatrixXd sampleScales(const MatrixXd& states);
+		virtual MatrixXd samplePosterior(
+			const MatrixXd& data,
+			const MatrixXd& states,
+			const Parameters params = Parameters());
 		virtual MatrixXd samplePosterior(const MatrixXd& data, const Parameters params = Parameters());
 		virtual MatrixXd sampleNullspace(const MatrixXd& data, const Parameters params = Parameters());
 
@@ -102,6 +106,7 @@ class ISA : public Distribution {
 		int mNumHiddens;
 		MatrixXd mBasis;
 		vector<GSM> mSubspaces;
+		MatrixXd mHiddenStates;
 };
 
 
