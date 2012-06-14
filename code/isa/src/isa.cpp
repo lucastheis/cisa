@@ -5,46 +5,11 @@
 #include "utils.h"
 #include <iostream>
 #include <iomanip>
-#include <algorithm>
 #include <cstdlib>
 #include <cmath>
 #include <functional>
 
 using namespace std;
-
-VectorXi argsort(const VectorXd& data) {
-	// create pairs of values and indices
-	vector<pair<double, int> > pairs(data.size());
-	for(int i = 0; i < data.size(); ++i) {
-		pairs[i].first = data[i];
-		pairs[i].second = i;
-	}
-
-	// sort values in descending order
-	sort(pairs.begin(), pairs.end(), greater<pair<double, int> >());
-
-	// store indices
-	VectorXi indices(data.size());
-	for(int i = 0; i < data.size(); ++i)
-		indices[pairs[i].second] = i;
-
-	return indices;
-}
-
-
-
-MatrixXd covariance(const MatrixXd& data) {
-	MatrixXd data_centered = data.colwise() - data.rowwise().mean().eval();
-	return data_centered * data_centered.transpose() / data.cols();
-}
-
-
-
-MatrixXd normalize(const MatrixXd& matrix) {
-	return matrix.array().rowwise() / matrix.colwise().norm().eval().array();
-}
-
-
 
 ISA::Callback::~Callback() {
 }
@@ -387,20 +352,18 @@ MatrixXd ISA::samplePosterior(const MatrixXd& data, const Parameters params) {
 		return basis().inverse() * data;
 
 	// scales, variances, hidden and visible states
-	MatrixXd S;
-	MatrixXd v;
-	MatrixXd Y;
-	MatrixXd X;
+	MatrixXd S, v, Y, X;
 
-	// nullspace basis and basis
-	const MatrixXd& A = mBasis;
-	const MatrixXd B = nullspaceBasis();
-	const MatrixXd At = A.transpose();
-	const MatrixXd Bt = B.transpose();
+	// basis and nullspace basis
+	MatrixXd& A = mBasis;
+	MatrixXd B = nullspaceBasis();
+	MatrixXd At = A.transpose();
+	MatrixXd Bt = B.transpose();
 
 	// nullspace projection matrix
 	MatrixXd Q = Bt * (B * Bt).llt().solve(B);
 
+	// part of the hidden representation
 	MatrixXd WX = At * (A * At).llt().solve(data);
 
 	// initialize Markov chain
@@ -411,7 +374,7 @@ MatrixXd ISA::samplePosterior(const MatrixXd& data, const Parameters params) {
 		S = sampleScales(Y);
 		v = S.array().square();
 		
-		// sample nullspace representations
+		// sample source variables
 		Y = sampleNormal(numHiddens(), data.cols()) * S.array();
 		X = data - basis() * Y;
 

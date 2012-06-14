@@ -12,4 +12,8 @@ Array<double, 1, Dynamic> logmeanexp(const ArrayXXd& array);
 
 ArrayXXd sampleNormal(int m = 1, int n = 1);
 
+VectorXi argsort(const VectorXd& data);
+MatrixXd covariance(const MatrixXd& data);
+MatrixXd normalize(const MatrixXd& matrix);
+
 #endif
