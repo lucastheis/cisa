@@ -10,6 +10,8 @@ from numpy import asarray, isnan, any, sqrt, sum, square, std
 from numpy.random import randn, rand
 from scipy.stats import kstest, norm, laplace, cauchy
 from scipy.optimize import check_grad
+from pickle import dump, load
+from tempfile import mkstemp
 
 class Tests(unittest.TestCase):
 	def test_sample(self):
@@ -89,6 +91,26 @@ class Tests(unittest.TestCase):
 		# variance should be 1 after normalization
 		self.assertLess(abs(gsm.variance() - 1.), 1e-8)
 		self.assertLess(abs(std(gsm.sample(10**6), ddof=1) - 1.), 1e-2)
+
+
+
+	def test_pickle(self):
+		gsm0 = GSM(3, 11)
+
+		tmp_file = mkstemp()[1]
+
+		# store model
+		with open(tmp_file, 'w') as handle:
+			dump({'gsm': gsm0}, handle)
+
+		# load model
+		with open(tmp_file) as handle:
+			gsm1 = load(handle)['gsm']
+
+		# make sure parameters haven't changed
+		self.assertEqual(gsm0.dim, gsm1.dim)
+		self.assertEqual(gsm0.num_scales, gsm1.num_scales)
+		self.assertLess(max(abs(gsm0.scales - gsm1.scales)), 1e-20)
 
 
 

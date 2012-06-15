@@ -50,4 +50,7 @@ PyObject* ISA_prior_energy(ISAObject* self, PyObject* args, PyObject* kwds);
 PyObject* ISA_prior_energy_gradient(ISAObject* self, PyObject* args, PyObject* kwds);
 PyObject* ISA_loglikelihood(ISAObject* self, PyObject* args, PyObject* kwds);
 
+PyObject* ISA_reduce(ISAObject*, PyObject*, PyObject*);
+PyObject* ISA_setstate(ISAObject*, PyObject*, PyObject*);
+
 #endif

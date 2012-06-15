@@ -11,6 +11,8 @@ from numpy.linalg import inv, eig
 from numpy.random import randn, permutation
 from scipy.optimize import check_grad
 from scipy.stats import kstest, laplace, ks_2samp
+from tempfile import mkstemp
+from pickle import dump, load
 
 class Tests(unittest.TestCase):
 	def test_default_parameters(self):
@@ -88,7 +90,8 @@ class Tests(unittest.TestCase):
 		self.assertEqual(isa.subspaces()[0].dim, 2)
 		self.assertEqual(isa.subspaces()[1].dim, 2)
 
-		self.assertEqual(sys.getrefcount(isa.subspaces), 1)
+		self.assertEqual(sys.getrefcount(isa.subspaces()), 1)
+		self.assertEqual(sys.getrefcount(isa.subspaces()[0]), 1)
 
 
 
@@ -268,6 +271,27 @@ class Tests(unittest.TestCase):
 		p = ks_2samp(states_post, states_prio)[1]
 
 		self.assertGreater(p, 0.0001)
+
+
+
+	def test_pickle(self):
+		isa0 = ISA(4, 16, ssize=3)
+
+		tmp_file = mkstemp()[1]
+
+		# store model
+		with open(tmp_file, 'w') as handle:
+			dump({'isa': isa0}, handle)
+
+		# load model
+		with open(tmp_file) as handle:
+			isa1 = load(handle)['isa']
+
+		# make sure parameters haven't changed
+		self.assertEqual(isa0.num_visibles, isa1.num_visibles)
+		self.assertEqual(isa0.num_hiddens, isa1.num_hiddens)
+		self.assertLess(max(abs(isa0.A - isa1.A)), 1e-20)
+		self.assertLess(max(abs(isa0.subspaces()[1].scales - isa1.subspaces()[1].scales)), 1e-20)
 
 
 

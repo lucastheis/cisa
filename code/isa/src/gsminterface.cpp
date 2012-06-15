@@ -280,3 +280,38 @@ PyObject* GSM_energy_gradient(GSMObject* self, PyObject* args, PyObject* kwds) {
 		return 0;
 	}
 }
+
+
+
+PyObject* GSM_reduce(GSMObject* self, PyObject*, PyObject*) {
+	PyObject* args = Py_BuildValue("(ii)", self->gsm->dim(), self->gsm->numScales());
+
+	PyObject* scales = GSM_scales(self, 0, 0);
+	PyObject* state = Py_BuildValue("(O)", scales);
+	Py_DECREF(scales);
+
+	PyObject* result = Py_BuildValue("OOO", self->ob_type, args, state);
+	Py_DECREF(args);
+	Py_DECREF(state);
+
+	return result;
+}
+
+
+
+PyObject* GSM_setstate(GSMObject* self, PyObject* state, PyObject*) {
+	PyObject* scales;
+
+	if(!PyArg_ParseTuple(state, "(O)", &scales))
+		return 0;
+
+	try {
+		self->gsm->setScales(PyArray_ToMatrixXd(scales));
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}

@@ -35,6 +35,8 @@ static PyMethodDef ISA_methods[] = {
 	{"prior_energy", (PyCFunction)ISA_prior_energy, METH_VARARGS|METH_KEYWORDS, 0},
 	{"prior_energy_gradient", (PyCFunction)ISA_prior_energy_gradient, METH_VARARGS|METH_KEYWORDS, 0},
 	{"loglikelihood", (PyCFunction)ISA_loglikelihood, METH_VARARGS|METH_KEYWORDS, 0},
+	{"__reduce__", (PyCFunction)ISA_reduce, METH_NOARGS, 0},
+	{"__setstate__", (PyCFunction)ISA_setstate, METH_VARARGS, 0},
 	{0}
 };
 
@@ -103,6 +105,8 @@ static PyMethodDef GSM_methods[] = {
 	{"loglikelihood", (PyCFunction)GSM_loglikelihood, METH_VARARGS|METH_KEYWORDS, 0},
 	{"energy", (PyCFunction)GSM_energy, METH_VARARGS|METH_KEYWORDS, 0},
 	{"energy_gradient", (PyCFunction)GSM_energy_gradient, METH_VARARGS|METH_KEYWORDS, 0},
+	{"__reduce__", (PyCFunction)GSM_reduce, METH_NOARGS, 0},
+	{"__setstate__", (PyCFunction)GSM_setstate, METH_VARARGS, 0},
 	{0}
 };
 

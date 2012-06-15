@@ -189,7 +189,7 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 
 
 
-PyObject* ISA_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
+PyObject* ISA_new(PyTypeObject* type, PyObject*, PyObject*) {
 	PyObject* self = type->tp_alloc(type, 0);
 
 	if(self)
@@ -705,4 +705,48 @@ PyObject* ISA_loglikelihood(ISAObject* self, PyObject* args, PyObject* kwds) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
 	}
+}
+
+
+
+PyObject* ISA_reduce(ISAObject* self, PyObject*, PyObject*) {
+	PyObject* args = Py_BuildValue("(ii)", self->isa->numVisibles(), self->isa->numHiddens());
+
+	PyObject* basis = ISA_basis(self, 0, 0);
+	PyObject* subspaces = ISA_subspaces(self, 0, 0);
+	PyObject* state = Py_BuildValue("(OO)", basis, subspaces);
+	Py_DECREF(basis);
+	Py_DECREF(subspaces);
+
+	PyObject* result = Py_BuildValue("OOO", self->ob_type, args, state);
+	Py_DECREF(args);
+	Py_DECREF(state);
+
+	return result;
+}
+
+
+
+PyObject* ISA_setstate(ISAObject* self, PyObject* state, PyObject*) {
+	PyObject* basis;
+	PyObject* subspaces;
+
+	if(!PyArg_ParseTuple(state, "(OO)", &basis, &subspaces))
+		return 0;
+
+	PyObject* args;
+	PyObject* kwds = PyDict_New();
+
+	args = Py_BuildValue("(O)", basis);
+	ISA_set_basis(self, args, kwds);
+	Py_DECREF(args);
+
+	args = Py_BuildValue("(O)", subspaces);
+	ISA_set_subspaces(self, args, kwds);
+	Py_DECREF(args);
+
+	Py_DECREF(kwds);
+
+	Py_INCREF(Py_None);
+	return Py_None;
 }
