@@ -16,4 +16,6 @@ VectorXi argsort(const VectorXd& data);
 MatrixXd covariance(const MatrixXd& data);
 MatrixXd normalize(const MatrixXd& matrix);
 
+double logDetPD(const MatrixXd& matrix);
+
 #endif

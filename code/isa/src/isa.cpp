@@ -40,6 +40,10 @@ ISA::Parameters::Parameters() {
 	gibbs.verbosity = 0;
 	gibbs.iniIter = 10;
 	gibbs.numIter = 2;
+
+	ais.verbosity = 0;
+	ais.numIter = 100;
+	ais.numSamples = 10;
 }
 
 
@@ -55,7 +59,8 @@ ISA::Parameters::Parameters(const Parameters& params) :
 	callback(0),
 	sgd(params.sgd),
 	gsm(params.gsm),
-	gibbs(params.gibbs)
+	gibbs(params.gibbs),
+	ais(params.ais)
 {
 	if(params.callback)
 		callback = params.callback->copy();
@@ -82,6 +87,7 @@ ISA::Parameters& ISA::Parameters::operator=(const Parameters& params) {
 	sgd = params.sgd;
 	gsm = params.gsm;
 	gibbs = params.gibbs;
+	ais = params.ais;
 
 	return *this;
 }
@@ -375,8 +381,8 @@ MatrixXd ISA::samplePosterior(const MatrixXd& data, const MatrixXd& states, cons
 	if(data.cols() != states.cols())
 		throw Exception("The number of hidden states and the number of data points should be equal.");
 
-	// scales, variances, hidden and visible states
-	MatrixXd S, v, Y, X;
+	// scales, variances, and visible states
+	MatrixXd S, v, X;
 
 	// basis and nullspace basis
 	MatrixXd& A = mBasis;
@@ -385,13 +391,13 @@ MatrixXd ISA::samplePosterior(const MatrixXd& data, const MatrixXd& states, cons
 	MatrixXd Bt = B.transpose();
 
 	// nullspace projection matrix
-	MatrixXd Q = Bt * (B * Bt).llt().solve(B);
+	MatrixXd Q = Bt * B;
 
 	// part of the hidden representation
 	MatrixXd WX = At * (A * At).llt().solve(data);
 
 	// initialize Markov chain
-	Y = WX + Q * states;
+	MatrixXd Y = WX + Q * states;
 
 	for(int i = 0; i < params.gibbs.numIter; ++i) {
 		// sample scales
@@ -400,7 +406,7 @@ MatrixXd ISA::samplePosterior(const MatrixXd& data, const MatrixXd& states, cons
 		
 		// sample source variables
 		Y = sampleNormal(numHiddens(), data.cols()) * S.array();
-		X = data - basis() * Y;
+		X = data - A * Y;
 
 		#pragma omp parallel for
  		for(int j = 0; j < data.cols(); ++j) {
@@ -417,8 +423,91 @@ MatrixXd ISA::samplePosterior(const MatrixXd& data, const MatrixXd& states, cons
 
 
 
+pair<MatrixXd, MatrixXd> ISA::samplePosteriorAIS(const MatrixXd& data, const Parameters params) {
+	VectorXd annealingWeights = VectorXd::LinSpaced(params.ais.numIter + 1, 0.0, 1.0).bottomRows(params.ais.numIter);
+
+	// initialize proposal distribution to be Gaussian
+	ISA isa = *this;
+
+	for(int j = 0; j < isa.numSubspaces(); ++j)
+		isa.mSubspaces[j].setScales(VectorXd::Ones(isa.mSubspaces[j].numScales()));
+
+	// scales, variances, and visible states
+	MatrixXd S, v, X;
+
+	// basis and nullspace basis
+	MatrixXd& A = mBasis;
+	MatrixXd B = nullspaceBasis();
+	MatrixXd At = A.transpose();
+	MatrixXd Bt = B.transpose();
+
+	// nullspace projection matrix
+	MatrixXd Q = Bt * B;
+
+	// part of the hidden representation
+	MatrixXd WX = At * (A * At).llt().solve(data);
+
+	// initialize hidden states
+	MatrixXd Y = WX + Q * isa.samplePrior(data.cols());
+
+	// importance weights
+	MatrixXd logWeights = (B * Y).colwise().squaredNorm().array() / 2. 
+		+ (numHiddens() - numVisibles()) * log(2. * PI) / 2. - logDetPD(A * At) / 2.;
+
+	for(int i = 0; i < params.ais.numIter; ++i) {
+		// adjust proposal distribution
+		for(int j = 0; j < isa.numSubspaces(); ++j)
+			isa.mSubspaces[j].setScales(
+				annealingWeights[i] * isa.mSubspaces[j].scales() + (1. - annealingWeights[i]));
+
+		logWeights -= isa.priorEnergy(Y);
+
+		// sample scales
+		S = isa.sampleScales(Y);
+		v = S.array().square();
+		
+		// sample source variables
+		Y = sampleNormal(numHiddens(), data.cols()) * S.array();
+		X = data - A * Y;
+
+		#pragma omp parallel for
+ 		for(int j = 0; j < data.cols(); ++j) {
+ 			MatrixXd vAt = v.col(j).asDiagonal() * At;
+  			Y.col(j) = WX.col(j) + Q * (Y.col(j) + vAt * (A * vAt).llt().solve(X.col(j)));
+ 		}
+
+		logWeights += isa.priorEnergy(Y);
+
+		if(params.ais.verbosity > 0)
+			cout << setw(10) << i << setw(12) << fixed << setprecision(4) << priorEnergy(Y).mean() << endl;
+	}
+
+	logWeights += priorLogLikelihood(Y);
+
+	return pair<MatrixXd, MatrixXd>(Y, logWeights);
+}
+
+
+
 MatrixXd ISA::sampleNullspace(const MatrixXd& data, const Parameters params) {
 	return nullspaceBasis() * samplePosterior(data, params);
+}
+
+
+
+MatrixXd ISA::priorLogLikelihood(const MatrixXd& states) {
+	MatrixXd logLik = MatrixXd::Zero(states.rows(), states.cols());
+
+	int from[numSubspaces()];
+	for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
+		from[i] = f;
+
+	#pragma omp parallel for
+	for(int i = 0; i < numSubspaces(); ++i)
+		logLik.middleRows(from[i], mSubspaces[i].dim()) =
+			mSubspaces[i].logLikelihood(states.middleRows(from[i], mSubspaces[i].dim()));
+
+	return logLik.colwise().sum();
 }
 
 
@@ -458,30 +547,49 @@ MatrixXd ISA::priorEnergyGradient(const MatrixXd& states) {
 
 
 Array<double, 1, Dynamic> ISA::logLikelihood(const MatrixXd& data) {
+	return logLikelihood(data, Parameters());
+}
+
+
+
+Array<double, 1, Dynamic> ISA::logLikelihood(const MatrixXd& data, const Parameters params) {
 	if(data.rows() != numVisibles())
 		throw Exception("Data has wrong dimensionality.");
 
-	if(!complete())
-		throw Exception("Not implemented yet.");
+	if(complete()) {
+		// LU decomposition
+		PartialPivLU<MatrixXd> basisLU(mBasis);
 
-	// LU decomposition
-	PartialPivLU<MatrixXd> basisLU(mBasis);
+		// compute log-determinant of basis
+		double logDet = basisLU.matrixLU().diagonal().array().abs().log().sum();
 
-	// compute log-determinant of basis
-	double logDet = basisLU.matrixLU().diagonal().array().abs().log().sum();
+		// multiplication is faster than solve()
+		MatrixXd states = basisLU.inverse() * data;
+		MatrixXd logLik = MatrixXd::Zero(states.rows(), states.cols());
 
-	// multiplication is faster than solve()
-	MatrixXd states = basisLU.inverse() * data;
-	MatrixXd logLik = MatrixXd::Zero(states.rows(), states.cols());
+		int from[numSubspaces()];
+		for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
+			from[i] = f;
 
-	int from[numSubspaces()];
-	for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
-		from[i] = f;
+		#pragma omp parallel for
+		for(int i = 0; i < numSubspaces(); ++i)
+			logLik.middleRows(from[i], mSubspaces[i].dim()) =
+				mSubspaces[i].logLikelihood(states.middleRows(from[i], mSubspaces[i].dim()));
 
-	#pragma omp parallel for
-	for(int i = 0; i < numSubspaces(); ++i)
-		logLik.middleRows(from[i], mSubspaces[i].dim()) =
-			mSubspaces[i].logLikelihood(states.middleRows(from[i], mSubspaces[i].dim()));
+		return logLik.colwise().sum().array() - logDet;
+	} else {
+		MatrixXd logWeights(params.ais.numSamples, data.cols());
 
-	return logLik.colwise().sum().array() - logDet;
+		#pragma omp parallel for
+		for(int i = 0; i < params.ais.numSamples; ++i)
+			logWeights.row(i) = samplePosteriorAIS(data, params).second;
+
+		return logmeanexp(logWeights);
+	}
+}
+
+
+
+double ISA::evaluate(const MatrixXd& data, const Parameters params) {
+	return -logLikelihood(data, params).mean() / log(2.) / dim();
 }

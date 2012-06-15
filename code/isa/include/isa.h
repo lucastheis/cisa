@@ -10,6 +10,7 @@
 using namespace Eigen;
 using std::string;
 using std::vector;
+using std::pair;
 
 class ISA : public Distribution {
 	public:
@@ -50,6 +51,12 @@ class ISA : public Distribution {
 					int iniIter;
 					int numIter;
 				} gibbs;
+
+				struct {
+					int verbosity;
+					int numIter;
+					int numSamples;
+				} ais;
 
 				Parameters();
 				Parameters(const Parameters& params);
@@ -93,13 +100,19 @@ class ISA : public Distribution {
 			const MatrixXd& data,
 			const MatrixXd& states,
 			const Parameters params = Parameters());
+		virtual pair<MatrixXd, MatrixXd> samplePosteriorAIS(
+			const MatrixXd& data,
+			const Parameters params = Parameters());
 		virtual MatrixXd samplePosterior(const MatrixXd& data, const Parameters params = Parameters());
 		virtual MatrixXd sampleNullspace(const MatrixXd& data, const Parameters params = Parameters());
 
+		virtual MatrixXd priorLogLikelihood(const MatrixXd& states);
 		virtual MatrixXd priorEnergy(const MatrixXd& states);
 		virtual MatrixXd priorEnergyGradient(const MatrixXd& states);
 
 		virtual Array<double, 1, Dynamic> logLikelihood(const MatrixXd& data);
+		virtual Array<double, 1, Dynamic> logLikelihood(const MatrixXd& data, const Parameters params);
+		virtual double evaluate(const MatrixXd& data, const Parameters params = Parameters());
 
 	protected:
 		int mNumVisibles;

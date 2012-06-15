@@ -1,3 +1,4 @@
+#include "Eigen/Cholesky"
 #include "utils.h"
 #include <algorithm>
 #include <vector>
@@ -57,4 +58,10 @@ MatrixXd covariance(const MatrixXd& data) {
 
 MatrixXd normalize(const MatrixXd& matrix) {
 	return matrix.array().rowwise() / matrix.colwise().norm().eval().array();
+}
+
+
+
+double logDetPD(const MatrixXd& matrix) {
+	return 2. * matrix.llt().matrixLLT().diagonal().array().log().sum();
 }

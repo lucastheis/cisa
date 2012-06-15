@@ -31,10 +31,12 @@ static PyMethodDef ISA_methods[] = {
 	{"sample_prior", (PyCFunction)ISA_sample_prior, METH_VARARGS|METH_KEYWORDS, 0},
 	{"sample_nullspace", (PyCFunction)ISA_sample_nullspace, METH_VARARGS|METH_KEYWORDS, 0},
 	{"sample_posterior", (PyCFunction)ISA_sample_posterior, METH_VARARGS|METH_KEYWORDS, 0},
+	{"sample_posterior_ais", (PyCFunction)ISA_sample_posterior_ais, METH_VARARGS|METH_KEYWORDS, 0},
 	{"sample_scales", (PyCFunction)ISA_sample_scales, METH_VARARGS|METH_KEYWORDS, 0},
 	{"prior_energy", (PyCFunction)ISA_prior_energy, METH_VARARGS|METH_KEYWORDS, 0},
 	{"prior_energy_gradient", (PyCFunction)ISA_prior_energy_gradient, METH_VARARGS|METH_KEYWORDS, 0},
 	{"loglikelihood", (PyCFunction)ISA_loglikelihood, METH_VARARGS|METH_KEYWORDS, 0},
+	{"evaluate", (PyCFunction)ISA_evaluate, METH_VARARGS|METH_KEYWORDS, 0},
 	{"__reduce__", (PyCFunction)ISA_reduce, METH_NOARGS, 0},
 	{"__setstate__", (PyCFunction)ISA_setstate, METH_VARARGS, 0},
 	{0}

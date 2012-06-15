@@ -182,6 +182,34 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 				else
 					throw Exception("gibbs.num_iter should be of type `int`.");
 		}
+
+		PyObject* ais = PyDict_GetItemString(parameters, "ais");
+
+		if(!ais)
+			ais = PyDict_GetItemString(parameters, "AIS");
+
+		if(ais && PyDict_Check(ais)) {
+			PyObject* verbosity = PyDict_GetItemString(ais, "verbosity");
+			if(verbosity)
+				if(PyInt_Check(verbosity))
+					params.ais.verbosity = PyInt_AsLong(verbosity);
+				else
+					throw Exception("ais.verbosity should be of type `int`.");
+
+			PyObject* num_iter = PyDict_GetItemString(ais, "num_iter");
+			if(num_iter)
+				if(PyInt_Check(num_iter))
+					params.ais.numIter = PyInt_AsLong(num_iter);
+				else
+					throw Exception("ais.num_iter should be of type `int`.");
+
+			PyObject* num_samples = PyDict_GetItemString(ais, "num_samples");
+			if(num_samples)
+				if(PyInt_Check(num_samples))
+					params.ais.numSamples = PyInt_AsLong(num_samples);
+				else
+					throw Exception("ais.num_samples should be of type `int`.");
+		}
 	}
 
 	return params;
@@ -394,6 +422,7 @@ PyObject* ISA_default_parameters(ISAObject* self) {
 	PyObject* sgd = PyDict_New();
 	PyObject* gsm = PyDict_New();
 	PyObject* gibbs = PyDict_New();
+	PyObject* ais = PyDict_New();
 
 	PyDict_SetItemString(parameters, "verbosity", PyInt_FromLong(params.verbosity));
 	PyDict_SetItemString(parameters, "training_method",
@@ -448,9 +477,19 @@ PyObject* ISA_default_parameters(ISAObject* self) {
 	PyDict_SetItemString(gibbs, "ini_iter", PyInt_FromLong(params.gibbs.iniIter));
 	PyDict_SetItemString(gibbs, "num_iter", PyInt_FromLong(params.gibbs.numIter));
 
+	PyDict_SetItemString(ais, "verbosity", PyInt_FromLong(params.ais.verbosity));
+	PyDict_SetItemString(ais, "num_iter", PyInt_FromLong(params.ais.numIter));
+	PyDict_SetItemString(ais, "num_samples", PyInt_FromLong(params.ais.numSamples));
+
 	PyDict_SetItemString(parameters, "sgd", sgd);
 	PyDict_SetItemString(parameters, "gsm", gsm);
 	PyDict_SetItemString(parameters, "gibbs", gibbs);
+	PyDict_SetItemString(parameters, "ais", ais);
+
+	Py_DECREF(sgd);
+	Py_DECREF(gsm);
+	Py_DECREF(gibbs);
+	Py_DECREF(ais);
 
 	return parameters;
 }
@@ -533,6 +572,8 @@ PyObject* ISA_sample(ISAObject* self, PyObject* args, PyObject* kwds) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
 	}
+
+	return 0;
 }
 
 
@@ -551,6 +592,8 @@ PyObject* ISA_sample_prior(ISAObject* self, PyObject* args, PyObject* kwds) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
 	}
+
+	return 0;
 }
 
 
@@ -578,6 +621,8 @@ PyObject* ISA_sample_nullspace(ISAObject* self, PyObject* args, PyObject* kwds) 
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
 	}
+
+	return 0;
 }
 
 
@@ -605,6 +650,48 @@ PyObject* ISA_sample_posterior(ISAObject* self, PyObject* args, PyObject* kwds) 
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
 	}
+
+	return 0;
+}
+
+
+
+PyObject* ISA_sample_posterior_ais(ISAObject* self, PyObject* args, PyObject* kwds) {
+	char* kwlist[] = {"data", "parameters", 0};
+
+	PyObject* data;
+	PyObject* parameters = 0;
+
+	// read arguments
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &data, &parameters))
+		return 0;
+
+	// make sure data is stored in NumPy array
+	if(!PyArray_Check(data)) {
+		PyErr_SetString(PyExc_TypeError, "Data has to be stored in a NumPy array.");
+		return 0;
+	}
+
+	try {
+		ISA::Parameters params = PyObject_ToParameters(self, parameters);
+
+		pair<MatrixXd, MatrixXd> result = self->isa->samplePosteriorAIS(PyArray_ToMatrixXd(data), params);
+
+		PyObject* samples = PyArray_FromMatrixXd(result.first);
+		PyObject* logWeights = PyArray_FromMatrixXd(result.second);
+
+		PyObject* tuple = Py_BuildValue("(OO)", samples, logWeights);
+
+		Py_DECREF(samples);
+		Py_DECREF(logWeights);
+
+		return tuple;
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+
+	return 0;
 }
 
 
@@ -630,6 +717,8 @@ PyObject* ISA_sample_scales(ISAObject* self, PyObject* args, PyObject* kwds) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
 	}
+
+	return 0;
 }
 
 
@@ -655,6 +744,8 @@ PyObject* ISA_prior_energy(ISAObject* self, PyObject* args, PyObject* kwds) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
 	}
+
+	return 0;
 }
 
 
@@ -680,17 +771,20 @@ PyObject* ISA_prior_energy_gradient(ISAObject* self, PyObject* args, PyObject* k
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
 	}
+
+	return 0;
 }
 
 
 
 PyObject* ISA_loglikelihood(ISAObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"data", 0};
+	char* kwlist[] = {"data", "parameters", 0};
 
 	PyObject* data;
+	PyObject* parameters = 0;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &data))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &data, &parameters))
 		return 0;
 
 	// make sure data is stored in NumPy array
@@ -700,11 +794,45 @@ PyObject* ISA_loglikelihood(ISAObject* self, PyObject* args, PyObject* kwds) {
 	}
 
 	try {
-		return PyArray_FromMatrixXd(self->isa->logLikelihood(PyArray_ToMatrixXd(data)));
+		return PyArray_FromMatrixXd(self->isa->logLikelihood(
+			PyArray_ToMatrixXd(data),
+			PyObject_ToParameters(parameters)));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
 	}
+
+	return 0;
+}
+
+
+
+PyObject* ISA_evaluate(ISAObject* self, PyObject* args, PyObject* kwds) {
+	char* kwlist[] = {"data", "parameters", 0};
+
+	PyObject* data;
+	PyObject* parameters = 0;
+
+	// read arguments
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &data, &parameters))
+		return 0;
+
+	// make sure data is stored in NumPy array
+	if(!PyArray_Check(data)) {
+		PyErr_SetString(PyExc_TypeError, "Data has to be stored in a NumPy array.");
+		return 0;
+	}
+
+	try {
+		return PyFloat_FromDouble(self->isa->evaluate(
+			PyArray_ToMatrixXd(data), params),
+			PyObject_ToParameters(self, parameters));
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+
+	return 0;
 }
 
 
