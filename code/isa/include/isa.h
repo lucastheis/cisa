@@ -29,7 +29,9 @@ class ISA : public Distribution {
 				int maxIter;
 				bool adaptive;
 				bool trainPrior;
+				bool trainBasis;
 				bool persistent;
+				bool orthogonalize;
 				Callback* callback;
 
 				struct {
@@ -96,6 +98,8 @@ class ISA : public Distribution {
 
 		virtual void initialize();
 		virtual void initialize(const MatrixXd& data);
+
+		virtual void orthogonalize();
 
 		virtual void train(const MatrixXd& data, Parameters params = Parameters());
 		virtual void trainPrior(

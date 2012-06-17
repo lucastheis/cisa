@@ -52,6 +52,8 @@ ISA::Parameters::Parameters() {
 	maxIter = 10;
 	adaptive = true;
 	trainPrior = true;
+	trainBasis = true;
+	orthogonalize = true;
 	callback = 0;
 	persistent = true;
 
@@ -92,7 +94,9 @@ ISA::Parameters::Parameters(const Parameters& params) :
 	maxIter(params.maxIter),
 	adaptive(params.adaptive),
 	trainPrior(params.trainPrior),
+	trainBasis(params.trainBasis),
 	persistent(params.persistent),
+	orthogonalize(params.orthogonalize),
 	callback(0),
 	sgd(params.sgd),
 	lbfgs(params.lbfgs),
@@ -126,6 +130,8 @@ ISA::Parameters& ISA::Parameters::operator=(const Parameters& params) {
 	maxIter = params.maxIter;
 	adaptive = params.adaptive;
 	trainPrior = params.trainPrior;
+	trainBasis = params.trainBasis;
+	orthogonalize = params.orthogonalize;
 	persistent = params.persistent;
 	callback = params.callback ? params.callback->copy() : 0;
 	sgd = params.sgd;
@@ -239,6 +245,14 @@ void ISA::initialize(const MatrixXd& data) {
 
 
 
+void ISA::orthogonalize() {
+	// symmetrically orthogonalize basis
+	SelfAdjointEigenSolver<MatrixXd> eigenSolver1(mBasis * mBasis.transpose());
+	mBasis = eigenSolver1.operatorInverseSqrt() * mBasis;
+}
+
+
+
 void ISA::train(const MatrixXd& data, Parameters params) {
 	if(data.rows() != numVisibles())
 		throw Exception("Data has wrong dimensionality.");
@@ -287,31 +301,29 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 			// optimize marginal distributions
 			trainPrior(mHiddenStates, params);
 
-		// optimize basis
-		bool improved;
+		if(params.trainBasis) {
+			// optimize basis
+			bool improved;
 
-		switch(params.trainingMethod[0]) {
-			case 's':
-			case 'S':
-				improved = trainSGD(complData, complBasis, params);
+			switch(params.trainingMethod[0]) {
+				case 's':
+				case 'S':
+					improved = trainSGD(complData, complBasis, params);
 
-				if(params.adaptive)
-					// adapt step width
-					params.sgd.stepWidth *= improved ? 1.1 : 0.5;
-				break;
+					if(params.adaptive)
+						// adapt step width
+						params.sgd.stepWidth *= improved ? 1.1 : 0.5;
+					break;
 
-			case 'l':
-			case 'L':
-				trainLBFGS(complData, complBasis, params);
-				break;
+				case 'l':
+				case 'L':
+					trainLBFGS(complData, complBasis, params);
+					break;
 
-			default:
-				throw Exception("Unknown training method.");
+				default:
+					throw Exception("Unknown training method.");
+			}
 		}
-
-		if(params.callback)
-			if(!(*params.callback)(i + 1, *this))
-				break;
 
 		if(params.verbosity > 0) {
 			// print some information
@@ -322,6 +334,13 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 				cout << setw(14) << fixed << setprecision(7) << params.sgd.stepWidth;
 			cout << endl;
 		}
+
+		if(params.orthogonalize)
+			orthogonalize();
+
+		if(params.callback)
+			if(!(*params.callback)(i + 1, *this))
+				break;
 	}
 }
 

@@ -26,6 +26,7 @@ static PyMethodDef ISA_methods[] = {
 	{"subspaces", (PyCFunction)ISA_subspaces, METH_NOARGS, 0},
 	{"set_subspaces", (PyCFunction)ISA_set_subspaces, METH_VARARGS|METH_KEYWORDS, 0},
 	{"initialize", (PyCFunction)ISA_initialize, METH_VARARGS|METH_KEYWORDS, 0},
+	{"orthogonalize", (PyCFunction)ISA_orthogonalize, METH_NOARGS, 0},
 	{"train", (PyCFunction)ISA_train, METH_VARARGS|METH_KEYWORDS, 0},
 	{"sample", (PyCFunction)ISA_sample, METH_VARARGS|METH_KEYWORDS, 0},
 	{"sample_prior", (PyCFunction)ISA_sample_prior, METH_VARARGS|METH_KEYWORDS, 0},

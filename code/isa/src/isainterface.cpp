@@ -60,6 +60,20 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 			else
 				throw Exception("train_prior should be of type `bool`.");
 
+		PyObject* trainBasis = PyDict_GetItemString(parameters, "train_basis");
+		if(trainBasis)
+			if(PyBool_Check(trainBasis))
+				params.trainBasis = (trainBasis == Py_True);
+			else
+				throw Exception("train_basis should be of type `bool`.");
+
+		PyObject* orthogonalize = PyDict_GetItemString(parameters, "orthogonalize");
+		if(orthogonalize)
+			if(PyBool_Check(orthogonalize))
+				params.orthogonalize = (orthogonalize == Py_True);
+			else
+				throw Exception("orthogonalize should be of type `bool`.");
+
 		PyObject* callback = PyDict_GetItemString(parameters, "callback");
 		if(callback)
 			if(PyCallable_Check(callback))
@@ -597,6 +611,20 @@ PyObject* ISA_initialize(ISAObject* self, PyObject* args, PyObject* kwds) {
 		self->isa->initialize();
 		if(data)
 			self->isa->initialize(PyArray_ToMatrixXd(data));
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+
+
+PyObject* ISA_orthogonalize(ISAObject* self, PyObject* args, PyObject* kwds) {
+	try {
+		self->isa->orthogonalize();
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;

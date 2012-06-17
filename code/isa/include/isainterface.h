@@ -38,6 +38,7 @@ PyObject* ISA_set_subspaces(ISAObject*, PyObject*, PyObject*);
 PyObject* ISA_default_parameters(ISAObject*);
 
 PyObject* ISA_initialize(ISAObject*, PyObject*, PyObject*);
+PyObject* ISA_orthogonalize(ISAObject*, PyObject*, PyObject*);
 PyObject* ISA_train(ISAObject*, PyObject*, PyObject*);
 
 PyObject* ISA_sample(ISAObject*, PyObject*, PyObject*);

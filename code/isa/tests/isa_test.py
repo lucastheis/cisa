@@ -75,7 +75,7 @@ class Tests(unittest.TestCase):
 		isa.initialize(data)
 
 		# rows of A should be roughly orthogonal
-		self.assertTrue(sum(square(dot(isa.A, isa.A.T) - eye(5)).flatten()) < 1e-3)
+		self.assertLess(sum(square(dot(isa.A, isa.A.T) - eye(5)).flatten()), 1e-3)
 
 		p = kstest(
 			isa.sample_prior(100).flatten(),
@@ -87,6 +87,14 @@ class Tests(unittest.TestCase):
 		# test initialization with larger subspaces
 		isa = ISA(5, 10, ssize=2)
 		isa.initialize(data)
+
+
+
+	def test_orthogonalize(self):
+		isa = ISA(4, 8)
+		isa.orthogonalize()
+
+		self.assertLess(sum(square(dot(isa.A, isa.A.T) - eye(4)).flatten()), 1e-3)
 
 
 
