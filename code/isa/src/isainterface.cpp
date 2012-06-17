@@ -796,7 +796,7 @@ PyObject* ISA_loglikelihood(ISAObject* self, PyObject* args, PyObject* kwds) {
 	try {
 		return PyArray_FromMatrixXd(self->isa->logLikelihood(
 			PyArray_ToMatrixXd(data),
-			PyObject_ToParameters(parameters)));
+			PyObject_ToParameters(self, parameters)));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
@@ -825,8 +825,8 @@ PyObject* ISA_evaluate(ISAObject* self, PyObject* args, PyObject* kwds) {
 
 	try {
 		return PyFloat_FromDouble(self->isa->evaluate(
-			PyArray_ToMatrixXd(data), params),
-			PyObject_ToParameters(self, parameters));
+			PyArray_ToMatrixXd(data),
+			PyObject_ToParameters(self, parameters)));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
