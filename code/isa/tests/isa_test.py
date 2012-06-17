@@ -6,7 +6,8 @@ sys.path.append('./build/lib.macosx-10.6-intel-2.7')
 sys.path.append('./build/lib.linux-x86_64-2.7')
 
 from isa import ISA
-from numpy import sqrt, sum, square, dot, var, eye, cov, diag, std, max, asarray, mean, ones
+from numpy import sqrt, sum, square, dot, var, eye, cov, diag, std, max, asarray, mean
+from numpy import ones, cos, sin
 from numpy.linalg import inv, eig
 from numpy.random import randn, permutation
 from scipy.optimize import check_grad

@@ -33,7 +33,7 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 		PyObject* samplingMethod = PyDict_GetItemString(parameters, "sampling_method");
 		if(samplingMethod)
 			if(PyString_Check(samplingMethod))
-				params.trainingMethod = PyString_AsString(samplingMethod);
+				params.samplingMethod = PyString_AsString(samplingMethod);
 			else
 				throw Exception("sampling_method should be of type `string`.");
 
