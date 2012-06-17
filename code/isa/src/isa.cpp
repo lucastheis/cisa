@@ -4,6 +4,7 @@
 #include "Eigen/Eigenvalues"
 #include "utils.h"
 #include "lbfgs.h"
+#include <algorithm>
 #include <iostream>
 #include <iomanip>
 #include <cstdlib>
@@ -217,7 +218,7 @@ void ISA::initialize(const MatrixXd& data) {
 	// largest index of largest 20% data points
 	int N = data.cols() / 5;
 	N = N < numHiddens() ? numHiddens() : N;
-	N = N > data.rows() ? data.rows() : N;
+	N = N > data.cols() ? data.cols() : N;
 
 	// store N largest data points and normalize
 	MatrixXd dataWhiteLarge = MatrixXd::Zero(data.rows(), N);
@@ -231,7 +232,7 @@ void ISA::initialize(const MatrixXd& data) {
 	MatrixXd innerProd;
 	MatrixXd::Index j;
 
-	for(int i = 1; i < numHiddens(); ++i) {
+	for(int i = 1; i < min(numHiddens(), N); ++i) {
 		// find data point with maximal inner product to other basis vectors
 		innerProd = mBasis.leftCols(i).transpose() * dataWhiteLarge;
 		innerProd.array().abs().colwise().maxCoeff().minCoeff(&j);
