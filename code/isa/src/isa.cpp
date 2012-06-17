@@ -3,6 +3,7 @@
 #include "Eigen/SVD"
 #include "Eigen/Eigenvalues"
 #include "utils.h"
+#include "lbfgs.h"
 #include <iostream>
 #include <iomanip>
 #include <cstdlib>
@@ -10,6 +11,33 @@
 #include <functional>
 
 using namespace std;
+
+static lbfgsfloatval_t evaluateLBFGS(void* instance, const lbfgsfloatval_t* x, lbfgsfloatval_t* g, int, double) {
+	// unpack user data
+	ISA* isa = static_cast<pair<ISA*, MatrixXd*>*>(instance)->first;
+	const MatrixXd& data = *static_cast<pair<ISA*, const MatrixXd*>*>(instance)->second;
+
+	// interpret parameters and gradients
+	Map<Matrix<lbfgsfloatval_t, Dynamic, Dynamic> > W(const_cast<lbfgsfloatval_t*>(x), isa->numHiddens(), isa->numHiddens());
+	Map<Matrix<lbfgsfloatval_t, Dynamic, Dynamic> > dW(g, isa->numHiddens(), isa->numHiddens());
+
+	// compute hidden states
+	MatrixXd states = W * data;
+
+	// LU decomposition
+	PartialPivLU<MatrixXd> filterLU(W);
+
+	// log-determinant of filter matrix
+	double logDet = filterLU.matrixLU().diagonal().array().abs().log().sum();
+
+	// compute gradient
+	dW = isa->priorEnergyGradient(states) * data.transpose() / data.cols() - filterLU.inverse().transpose();
+
+	// return objective function value
+	return isa->priorEnergy(states).mean() - logDet;
+}
+
+
 
 ISA::Callback::~Callback() {
 }
@@ -33,6 +61,8 @@ ISA::Parameters::Parameters() {
 	sgd.momentum = 0.8;
 	sgd.shuffle = true;
 	sgd.pocket = true;
+
+	lbfgs.maxIter = 50;
 
 	gsm.maxIter = 10;
 	gsm.tol = 1e-8;
@@ -58,6 +88,7 @@ ISA::Parameters::Parameters(const Parameters& params) :
 	persistent(params.persistent),
 	callback(0),
 	sgd(params.sgd),
+	lbfgs(params.lbfgs),
 	gsm(params.gsm),
 	gibbs(params.gibbs),
 	ais(params.ais)
@@ -85,6 +116,7 @@ ISA::Parameters& ISA::Parameters::operator=(const Parameters& params) {
 	persistent = params.persistent;
 	callback = params.callback ? params.callback->copy() : 0;
 	sgd = params.sgd;
+	lbfgs = params.lbfgs;
 	gsm = params.gsm;
 	gibbs = params.gibbs;
 	ais = params.ais;
@@ -234,7 +266,26 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 			trainPrior(mHiddenStates, params);
 
 		// optimize basis
-		bool improved = trainSGD(complData, complBasis, params);
+		bool improved;
+
+		switch(params.trainingMethod[0]) {
+			case 's':
+			case 'S':
+				improved = trainSGD(complData, complBasis, params);
+
+				if(params.adaptive)
+					// adapt step width
+					params.sgd.stepWidth *= improved ? 1.1 : 0.5;
+				break;
+
+			case 'l':
+			case 'L':
+				trainLBFGS(complData, complBasis, params);
+				break;
+
+			default:
+				throw Exception("Unknown training method.");
+		}
 
 		if(params.callback)
 			if(!(*params.callback)(i + 1, *this))
@@ -249,10 +300,6 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 				cout << setw(14) << fixed << setprecision(7) << params.sgd.stepWidth;
 			cout << endl;
 		}
-
-		if(params.adaptive)
-			// adapt step width
-			params.sgd.stepWidth *= improved ? 1.1 : 0.5;
 	}
 }
 
@@ -323,6 +370,45 @@ bool ISA::trainSGD(
 	setBasis(filterLU.inverse().topRows(numVisibles()));
 
 	return energyNew < energy;
+}
+
+
+
+bool ISA::trainLBFGS(
+	const MatrixXd& complData,
+	const MatrixXd& complBasis,
+	const Parameters params)
+{
+	// compute initial filter matrix
+	MatrixXd W = complBasis.inverse();
+
+	// request memory for LBFGS
+	lbfgsfloatval_t* x = lbfgs_malloc(W.size());
+
+	// copy parameters
+	for(int i = 0; i < W.size(); ++i)
+		x[i] = W.data()[i];
+
+	// optimization parameters
+	lbfgs_parameter_t param;
+	lbfgs_parameter_init(&param);
+	param.max_iterations = params.lbfgs.maxIter;
+
+	pair<ISA*, const MatrixXd*> instance(this, &complData);
+
+	// start LBFGS optimization
+	lbfgs(W.size(), x, 0, &evaluateLBFGS, 0, &instance, &param);
+
+	// copy optimized parameters back
+	W = Map<Matrix<lbfgsfloatval_t, Dynamic, Dynamic> >(x, W.rows(), W.cols());
+
+	// free memory used by LBFGS
+	lbfgs_free(x);
+
+	// update basis
+	setBasis(W.inverse().topRows(numVisibles()));
+
+	return true;
 }
 
 

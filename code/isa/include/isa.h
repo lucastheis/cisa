@@ -43,6 +43,10 @@ class ISA : public Distribution {
 
 				struct {
 					int maxIter;
+				} lbfgs;
+
+				struct {
+					int maxIter;
 					double tol;
 				} gsm;
 
@@ -89,6 +93,10 @@ class ISA : public Distribution {
 			const MatrixXd& states,
 			const Parameters params = Parameters());
 		virtual bool trainSGD(
+			const MatrixXd& complData,
+			const MatrixXd& complBasis,
+			const Parameters params = Parameters());
+		virtual bool trainLBFGS(
 			const MatrixXd& complData,
 			const MatrixXd& complBasis,
 			const Parameters params = Parameters());

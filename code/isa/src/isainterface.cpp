@@ -33,7 +33,7 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 		PyObject* samplingMethod = PyDict_GetItemString(parameters, "sampling_method");
 		if(samplingMethod)
 			if(PyString_Check(samplingMethod))
-				params.trainingMethod = PyString_AsString(samplingMethod);
+				params.samplingMethod = PyString_AsString(samplingMethod);
 			else
 				throw Exception("sampling_method should be of type `string`.");
 
@@ -122,6 +122,22 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 					params.sgd.pocket = (pocket == Py_True);
 				else
 					throw Exception("sgd.pocket should be of type `bool`.");
+		}
+
+		PyObject* lbfgs = PyDict_GetItemString(parameters, "lbfgs");
+
+		if(!lbfgs)
+			lbfgs = PyDict_GetItemString(parameters, "LBFGS");
+
+		if(lbfgs && PyDict_Check(lbfgs)) {
+			PyObject* maxIter = PyDict_GetItemString(lbfgs, "max_iter");
+			if(maxIter)
+				if(PyInt_Check(maxIter))
+					params.lbfgs.maxIter = PyInt_AsLong(maxIter);
+				else if(PyFloat_Check(maxIter))
+					params.lbfgs.maxIter = static_cast<int>(PyFloat_AsDouble(maxIter));
+				else
+					throw Exception("lbfgs.max_iter should be of type `int`.");
 		}
 
 		PyObject* gsm = PyDict_GetItemString(parameters, "gsm");
@@ -420,6 +436,7 @@ PyObject* ISA_default_parameters(ISAObject* self) {
 	ISA::Parameters params;
 	PyObject* parameters = PyDict_New();
 	PyObject* sgd = PyDict_New();
+	PyObject* lbfgs = PyDict_New();
 	PyObject* gsm = PyDict_New();
 	PyObject* gibbs = PyDict_New();
 	PyObject* ais = PyDict_New();
@@ -470,6 +487,8 @@ PyObject* ISA_default_parameters(ISAObject* self) {
 		Py_DECREF(Py_False);
 	}
 
+	PyDict_SetItemString(lbfgs, "max_iter", PyInt_FromLong(params.lbfgs.maxIter));
+
 	PyDict_SetItemString(gsm, "max_iter", PyInt_FromLong(params.gsm.maxIter));
 	PyDict_SetItemString(gsm, "tol", PyFloat_FromDouble(params.gsm.tol));
 
@@ -482,11 +501,13 @@ PyObject* ISA_default_parameters(ISAObject* self) {
 	PyDict_SetItemString(ais, "num_samples", PyInt_FromLong(params.ais.numSamples));
 
 	PyDict_SetItemString(parameters, "sgd", sgd);
+	PyDict_SetItemString(parameters, "lbfgs", lbfgs);
 	PyDict_SetItemString(parameters, "gsm", gsm);
 	PyDict_SetItemString(parameters, "gibbs", gibbs);
 	PyDict_SetItemString(parameters, "ais", ais);
 
 	Py_DECREF(sgd);
+	Py_DECREF(lbfgs);
 	Py_DECREF(gsm);
 	Py_DECREF(gibbs);
 	Py_DECREF(ais);

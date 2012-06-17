@@ -6,7 +6,8 @@ sys.path.append('./build/lib.macosx-10.6-intel-2.7')
 sys.path.append('./build/lib.linux-x86_64-2.7')
 
 from isa import ISA
-from numpy import sqrt, sum, square, dot, var, eye, cov, diag, std, max, asarray, mean, ones
+from numpy import sqrt, sum, square, dot, var, eye, cov, diag, std, max, asarray, mean
+from numpy import ones, cos, sin
 from numpy.linalg import inv, eig
 from numpy.random import randn, permutation
 from scipy.optimize import check_grad
@@ -23,6 +24,7 @@ class Tests(unittest.TestCase):
 		self.assertTrue(isinstance(params, dict))
 		self.assertEqual(sys.getrefcount(params) - 1, 1)
 		self.assertEqual(sys.getrefcount(params['sgd']) - 1, 1)
+		self.assertEqual(sys.getrefcount(params['lbfgs']) - 1, 1)
 		self.assertEqual(sys.getrefcount(params['gsm']) - 1, 1)
 		self.assertEqual(sys.getrefcount(params['gibbs']) - 1, 1)
 		self.assertEqual(sys.getrefcount(params['ais']) - 1, 1)
@@ -123,6 +125,30 @@ class Tests(unittest.TestCase):
 		params['gibbs']['verbosity'] = 0
 		isa.initialize(randn(2, 1000))
 		isa.train(randn(2, 1000), params)
+
+
+
+	def test_train_lbfgs(self):
+		isa = ISA(2)
+		isa.initialize()
+
+		isa.A = eye(2)
+
+		samples = isa.sample(10000)
+
+		# initialize close to original parameters
+		isa.A = asarray([[cos(0.4), sin(0.4)], [-sin(0.4), cos(0.4)]])
+
+		params = isa.default_parameters()
+		params['training_method'] = 'LBFGS'
+		params['train_prior'] = False
+		params['max_iter'] = 1
+		params['lbfgs']['max_iter'] = 50
+
+		isa.train(samples, params)
+
+		# L-BFGS should be able to recover the parameters
+		self.assertLess(sqrt(sum(square(isa.A.flatten() - eye(2).flatten()))), 0.1)
 
 
 
