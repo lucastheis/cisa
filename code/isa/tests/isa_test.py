@@ -23,6 +23,8 @@ class Tests(unittest.TestCase):
 		self.assertTrue(isinstance(params, dict))
 		self.assertEqual(sys.getrefcount(params) - 1, 1)
 		self.assertEqual(sys.getrefcount(params['sgd']) - 1, 1)
+		self.assertEqual(sys.getrefcount(params['lbfgs']) - 1, 1)
+		self.assertEqual(sys.getrefcount(params['mp']) - 1, 1)
 		self.assertEqual(sys.getrefcount(params['gsm']) - 1, 1)
 		self.assertEqual(sys.getrefcount(params['gibbs']) - 1, 1)
 		self.assertEqual(sys.getrefcount(params['ais']) - 1, 1)
@@ -124,6 +126,50 @@ class Tests(unittest.TestCase):
 		isa.initialize(randn(2, 1000))
 		isa.train(randn(2, 1000), params)
 
+
+
+	def test_train_lbfgs(self):
+		isa = ISA(2)
+		isa.initialize()
+
+		isa.A = eye(2)
+
+		samples = isa.sample(10000)
+
+		# initialize close to original parameters
+		isa.A = asarray([[cos(0.4), sin(0.4)], [-sin(0.4), cos(0.4)]])
+
+		params = isa.default_parameters()
+		params['training_method'] = 'LBFGS'
+		params['train_prior'] = False
+		params['max_iter'] = 1
+		params['lbfgs']['max_iter'] = 50
+
+		isa.train(samples, params)
+
+		# L-BFGS should be able to recover the parameters
+		self.assertLess(sqrt(sum(square(isa.A.flatten() - eye(2).flatten()))), 0.1)
+
+
+
+	def test_train_mp(self):
+		isa = ISA(5, 10)
+
+		params = isa.default_parameters()
+		params['training_method'] = 'MP'
+		params['mp']['num_coeff'] = 4
+
+		samples = isa.sample(100)
+
+		states = isa.matching_pursuit(samples, params)
+
+		# simple sanity checks
+		self.assertEqual(states.shape[1], 100)
+		self.assertEqual(states.shape[0], 10)
+		self.assertFalse(any(sum(states > 0., 0) > 4))
+
+		# make sure training with MP doesn't throw any errors
+		isa.train(isa.sample(1011), params)
 
 
 

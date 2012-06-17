@@ -43,6 +43,19 @@ class ISA : public Distribution {
 
 				struct {
 					int maxIter;
+				} lbfgs;
+
+				struct {
+					Callback* callback;
+					int maxIter;
+					int batchSize;
+					double stepWidth;
+					double momentum;
+					int numCoeff;
+				} mp;
+
+				struct {
+					int maxIter;
 					double tol;
 				} gsm;
 
@@ -92,6 +105,13 @@ class ISA : public Distribution {
 			const MatrixXd& complData,
 			const MatrixXd& complBasis,
 			const Parameters params = Parameters());
+		virtual bool trainLBFGS(
+			const MatrixXd& complData,
+			const MatrixXd& complBasis,
+			const Parameters params = Parameters());
+		virtual void trainMP(
+			const MatrixXd& data,
+			const Parameters params = Parameters());
 
 		virtual MatrixXd sample(int numSamples = 1);
 		virtual MatrixXd samplePrior(int numSamples = 1);
@@ -105,6 +125,8 @@ class ISA : public Distribution {
 			const Parameters params = Parameters());
 		virtual MatrixXd samplePosterior(const MatrixXd& data, const Parameters params = Parameters());
 		virtual MatrixXd sampleNullspace(const MatrixXd& data, const Parameters params = Parameters());
+
+		virtual MatrixXd matchingPursuit(const MatrixXd& data, const Parameters params = Parameters());
 
 		virtual MatrixXd priorLogLikelihood(const MatrixXd& states);
 		virtual MatrixXd priorEnergy(const MatrixXd& states);

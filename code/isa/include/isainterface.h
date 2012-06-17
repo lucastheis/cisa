@@ -47,6 +47,8 @@ PyObject* ISA_sample_posterior(ISAObject*, PyObject*, PyObject*);
 PyObject* ISA_sample_posterior_ais(ISAObject*, PyObject*, PyObject*);
 PyObject* ISA_sample_scales(ISAObject*, PyObject*, PyObject*);
 
+PyObject* ISA_matching_pursuit(ISAObject*, PyObject*, PyObject*);
+
 PyObject* ISA_prior_energy(ISAObject*, PyObject*, PyObject*);
 PyObject* ISA_prior_energy_gradient(ISAObject*, PyObject*, PyObject*);
 PyObject* ISA_loglikelihood(ISAObject*, PyObject*, PyObject*);

@@ -34,6 +34,15 @@ ISA::Parameters::Parameters() {
 	sgd.shuffle = true;
 	sgd.pocket = true;
 
+	lbfgs.maxIter = 50;
+
+	mp.maxIter = 100;
+	mp.batchSize = 100;
+	mp.stepWidth = 0.01;
+	mp.momentum = 0.8;
+	mp.numCoeff = 10;
+	mp.callback = 0;
+
 	gsm.maxIter = 10;
 	gsm.tol = 1e-8;
 
@@ -58,12 +67,17 @@ ISA::Parameters::Parameters(const Parameters& params) :
 	persistent(params.persistent),
 	callback(0),
 	sgd(params.sgd),
+	lbfgs(params.lbfgs),
+	mp(params.mp),
 	gsm(params.gsm),
 	gibbs(params.gibbs),
 	ais(params.ais)
 {
 	if(params.callback)
 		callback = params.callback->copy();
+
+	if(params.mp.callback)
+		mp.callback = params.mp.callback->copy();
 }
 
 
@@ -71,6 +85,8 @@ ISA::Parameters::Parameters(const Parameters& params) :
 ISA::Parameters::~Parameters() {
 	if(callback)
 		delete callback;
+	if(mp.callback)
+		delete mp.callback;
 }
 
 
@@ -85,6 +101,9 @@ ISA::Parameters& ISA::Parameters::operator=(const Parameters& params) {
 	persistent = params.persistent;
 	callback = params.callback ? params.callback->copy() : 0;
 	sgd = params.sgd;
+	lbfgs = params.lbfgs;
+	mp = params.mp;
+	mp.callback = params.mp.callback ? params.mp.callback->copy() : 0;
 	gsm = params.gsm;
 	gibbs = params.gibbs;
 	ais = params.ais;
@@ -195,6 +214,13 @@ void ISA::initialize(const MatrixXd& data) {
 void ISA::train(const MatrixXd& data, Parameters params) {
 	if(data.rows() != numVisibles())
 		throw Exception("Data has wrong dimensionality.");
+
+	if(params.trainingMethod[0] == 'm' or params.trainingMethod[0] == 'M') {
+		if(params.callback && !params.mp.callback)
+			params.mp.callback = params.callback->copy();
+		ISA::trainMP(data, params);
+		return;
+	}
 
 	if(params.callback)
 		// call callback function once before training
@@ -323,6 +349,104 @@ bool ISA::trainSGD(
 	setBasis(filterLU.inverse().topRows(numVisibles()));
 
 	return energyNew < energy;
+}
+
+
+
+bool ISA::trainLBFGS(
+	const MatrixXd& complData,
+	const MatrixXd& complBasis,
+	const Parameters params)
+{
+	// compute initial filter matrix
+	MatrixXd W = complBasis.inverse();
+
+	// request memory for LBFGS
+	lbfgsfloatval_t* x = lbfgs_malloc(W.size());
+
+	// copy parameters
+	for(int i = 0; i < W.size(); ++i)
+		x[i] = W.data()[i];
+
+	// optimization parameters
+	lbfgs_parameter_t param;
+	lbfgs_parameter_init(&param);
+	param.max_iterations = params.lbfgs.maxIter;
+
+	pair<ISA*, const MatrixXd*> instance(this, &complData);
+
+	// start LBFGS optimization
+	lbfgs(W.size(), x, 0, &evaluateLBFGS, 0, &instance, &param);
+
+	// copy optimized parameters back
+	W = Map<Matrix<lbfgsfloatval_t, Dynamic, Dynamic> >(x, W.rows(), W.cols());
+
+	// free memory used by LBFGS
+	lbfgs_free(x);
+
+	// update basis
+	setBasis(W.inverse().topRows(numVisibles()));
+
+	return true;
+}
+
+
+
+void ISA::trainMP(const MatrixXd& data, const Parameters params) {
+	// momentum, hidden and visible states
+	MatrixXd P = MatrixXd::Zero(mBasis.rows(), mBasis.cols());
+	MatrixXd X, Y;
+
+	mBasis = normalize(mBasis);
+
+	if(params.mp.callback)
+		if(!(*params.mp.callback)(0, *this))
+			return;
+
+	for(int i = 0; i < params.mp.maxIter; ++i) {
+		for(int j = 0; j + params.mp.batchSize <= data.cols(); j += params.mp.batchSize) {
+			X = data.middleCols(j, params.mp.batchSize);
+
+			// find coefficients
+			Y = matchingPursuit(X, params);
+
+			// update momentum with reconstruction gradient
+			P = params.mp.momentum * P + (X - mBasis * Y) * Y.transpose() / params.mp.batchSize;
+
+			// update filter matrix
+			mBasis += params.mp.stepWidth * P;
+			mBasis = normalize(mBasis);
+		}
+
+		if(params.mp.callback)
+			if(!(*params.mp.callback)(i + 1, *this))
+				break;
+	}
+}
+
+
+
+MatrixXd ISA::matchingPursuit(const MatrixXd& data, const Parameters params) {
+	MatrixXd hiddenStates = MatrixXd::Zero(numHiddens(), data.cols());
+	MatrixXd residuals = data;
+
+	for(int i = 0; i < params.mp.numCoeff; ++i) {
+		MatrixXd corr = mBasis.transpose() * residuals;
+
+		#pragma omp parallel for
+		for(int j = 0; j < corr.cols(); ++j) {
+			// find maximally active coefficient
+			int idx;
+			corr.col(j).maxCoeff(&idx);
+
+			// store coefficient
+			hiddenStates(idx, j) += corr(idx, j);
+		}
+
+		residuals = data - mBasis * hiddenStates;
+	}
+
+	return hiddenStates;
 }
 
 
