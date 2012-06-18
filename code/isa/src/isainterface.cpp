@@ -725,8 +725,9 @@ PyObject* ISA_sample_nullspace(ISAObject* self, PyObject* args, PyObject* kwds) 
 	}
 
 	try {
-		ISA::Parameters params = PyObject_ToParameters(self, parameters);
-		return PyArray_FromMatrixXd(self->isa->sampleNullspace(PyArray_ToMatrixXd(data), params));
+		return PyArray_FromMatrixXd(self->isa->sampleNullspace(
+			PyArray_ToMatrixXd(data),
+			PyObject_ToParameters(self, parameters)));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
@@ -754,8 +755,9 @@ PyObject* ISA_sample_posterior(ISAObject* self, PyObject* args, PyObject* kwds) 
 	}
 
 	try {
-		ISA::Parameters params = PyObject_ToParameters(self, parameters);
-		return PyArray_FromMatrixXd(self->isa->samplePosterior(PyArray_ToMatrixXd(data), params));
+		return PyArray_FromMatrixXd(self->isa->samplePosterior(
+			PyArray_ToMatrixXd(data),
+			PyObject_ToParameters(self, parameters)));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
@@ -796,6 +798,36 @@ PyObject* ISA_sample_posterior_ais(ISAObject* self, PyObject* args, PyObject* kw
 		Py_DECREF(logWeights);
 
 		return tuple;
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+
+	return 0;
+}
+
+
+
+PyObject* ISA_sample_ais(ISAObject* self, PyObject* args, PyObject* kwds) {
+	char* kwlist[] = {"data", "parameters", 0};
+
+	PyObject* data;
+	PyObject* parameters = 0;
+
+	// read arguments
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &data, &parameters))
+		return 0;
+
+	// make sure data is stored in NumPy array
+	if(!PyArray_Check(data)) {
+		PyErr_SetString(PyExc_TypeError, "Data has to be stored in a NumPy array.");
+		return 0;
+	}
+
+	try {
+		return PyArray_FromMatrixXd(self->isa->sampleAIS(
+			PyArray_ToMatrixXd(data),
+			PyObject_ToParameters(self, parameters)));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
@@ -850,8 +882,9 @@ PyObject* ISA_matching_pursuit(ISAObject* self, PyObject* args, PyObject* kwds) 
 	}
 
 	try {
-		ISA::Parameters params = PyObject_ToParameters(self, parameters);
-		return PyArray_FromMatrixXd(self->isa->matchingPursuit(PyArray_ToMatrixXd(data), params));
+		return PyArray_FromMatrixXd(self->isa->matchingPursuit(
+			PyArray_ToMatrixXd(data),
+			PyObject_ToParameters(self, parameters)));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
@@ -917,13 +950,14 @@ PyObject* ISA_prior_energy_gradient(ISAObject* self, PyObject* args, PyObject* k
 
 
 PyObject* ISA_loglikelihood(ISAObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"data", "parameters", 0};
+	char* kwlist[] = {"data", "parameters", "return_all", 0};
 
 	PyObject* data;
 	PyObject* parameters = 0;
+	int return_all = 0;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &data, &parameters))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|Oi", kwlist, &data, &parameters, &return_all))
 		return 0;
 
 	// make sure data is stored in NumPy array
@@ -933,9 +967,15 @@ PyObject* ISA_loglikelihood(ISAObject* self, PyObject* args, PyObject* kwds) {
 	}
 
 	try {
-		return PyArray_FromMatrixXd(self->isa->logLikelihood(
-			PyArray_ToMatrixXd(data),
-			PyObject_ToParameters(self, parameters)));
+		if(return_all)
+			return PyArray_FromMatrixXd(self->isa->logLikelihood(
+				PyArray_ToMatrixXd(data),
+				PyObject_ToParameters(self, parameters)));
+		else
+			return PyArray_FromMatrixXd(self->isa->sampleAIS(
+				PyArray_ToMatrixXd(data),
+				PyObject_ToParameters(self, parameters)));
+
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;

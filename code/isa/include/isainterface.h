@@ -47,6 +47,7 @@ PyObject* ISA_sample_nullspace(ISAObject*, PyObject*, PyObject*);
 PyObject* ISA_sample_posterior(ISAObject*, PyObject*, PyObject*);
 PyObject* ISA_sample_posterior_ais(ISAObject*, PyObject*, PyObject*);
 PyObject* ISA_sample_scales(ISAObject*, PyObject*, PyObject*);
+PyObject* ISA_sample_ais(ISAObject*, PyObject*, PyObject*);
 
 PyObject* ISA_matching_pursuit(ISAObject*, PyObject*, PyObject*);
 

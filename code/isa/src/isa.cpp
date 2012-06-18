@@ -347,7 +347,7 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 
 
 
-void ISA::trainPrior(const MatrixXd& states, const Parameters params) {
+void ISA::trainPrior(const MatrixXd& states, const Parameters& params) {
 	int from[numSubspaces()];
 	for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
 		from[i] = f;
@@ -370,7 +370,7 @@ void ISA::trainPrior(const MatrixXd& states, const Parameters params) {
 bool ISA::trainSGD(
 	const MatrixXd& complData,
 	const MatrixXd& complBasis,
-	const Parameters params)
+	const Parameters& params)
 {
 	// LU decomposition
 	PartialPivLU<MatrixXd> basisLU(complBasis);
@@ -419,7 +419,7 @@ bool ISA::trainSGD(
 bool ISA::trainLBFGS(
 	const MatrixXd& complData,
 	const MatrixXd& complBasis,
-	const Parameters params)
+	const Parameters& params)
 {
 	// compute initial filter matrix
 	MatrixXd W = complBasis.inverse();
@@ -455,7 +455,7 @@ bool ISA::trainLBFGS(
 
 
 
-void ISA::trainMP(const MatrixXd& data, const Parameters params) {
+void ISA::trainMP(const MatrixXd& data, const Parameters& params) {
 	// momentum, hidden and visible states
 	MatrixXd P = MatrixXd::Zero(mBasis.rows(), mBasis.cols());
 	MatrixXd X, Y;
@@ -489,7 +489,7 @@ void ISA::trainMP(const MatrixXd& data, const Parameters params) {
 
 
 
-MatrixXd ISA::matchingPursuit(const MatrixXd& data, const Parameters params) {
+MatrixXd ISA::matchingPursuit(const MatrixXd& data, const Parameters& params) {
 	MatrixXd hiddenStates = MatrixXd::Zero(numHiddens(), data.cols());
 	MatrixXd residuals = data;
 
@@ -552,13 +552,13 @@ MatrixXd ISA::sampleScales(const MatrixXd& states) {
 
 
 
-MatrixXd ISA::samplePosterior(const MatrixXd& data, const Parameters params) {
+MatrixXd ISA::samplePosterior(const MatrixXd& data, const Parameters& params) {
 	return samplePosterior(data, samplePrior(data.cols()), params);
 }
 
 
 
-MatrixXd ISA::samplePosterior(const MatrixXd& data, const MatrixXd& states, const Parameters params) {
+MatrixXd ISA::samplePosterior(const MatrixXd& data, const MatrixXd& states, const Parameters& params) {
 	if(data.rows() != numVisibles())
 		throw Exception("Data has wrong dimensionality.");
 
@@ -610,7 +610,7 @@ MatrixXd ISA::samplePosterior(const MatrixXd& data, const MatrixXd& states, cons
 
 
 
-pair<MatrixXd, MatrixXd> ISA::samplePosteriorAIS(const MatrixXd& data, const Parameters params) {
+pair<MatrixXd, MatrixXd> ISA::samplePosteriorAIS(const MatrixXd& data, const Parameters& params) {
 	VectorXd annealingWeights = VectorXd::LinSpaced(params.ais.numIter + 1, 0.0, 1.0).bottomRows(params.ais.numIter);
 
 	// initialize proposal distribution to be Gaussian
@@ -676,7 +676,7 @@ pair<MatrixXd, MatrixXd> ISA::samplePosteriorAIS(const MatrixXd& data, const Par
 
 
 
-MatrixXd ISA::sampleNullspace(const MatrixXd& data, const Parameters params) {
+MatrixXd ISA::sampleNullspace(const MatrixXd& data, const Parameters& params) {
 	return nullspaceBasis() * samplePosterior(data, params);
 }
 
@@ -739,7 +739,7 @@ Array<double, 1, Dynamic> ISA::logLikelihood(const MatrixXd& data) {
 
 
 
-Array<double, 1, Dynamic> ISA::logLikelihood(const MatrixXd& data, const Parameters params) {
+Array<double, 1, Dynamic> ISA::logLikelihood(const MatrixXd& data, const Parameters& params) {
 	if(data.rows() != numVisibles())
 		throw Exception("Data has wrong dimensionality.");
 
@@ -765,18 +765,24 @@ Array<double, 1, Dynamic> ISA::logLikelihood(const MatrixXd& data, const Paramet
 
 		return logLik.colwise().sum().array() - logDet;
 	} else {
-		MatrixXd logWeights(params.ais.numSamples, data.cols());
-
-		#pragma omp parallel for
-		for(int i = 0; i < params.ais.numSamples; ++i)
-			logWeights.row(i) = samplePosteriorAIS(data, params).second;
-
-		return logmeanexp(logWeights);
+		return logmeanexp(sampleAIS(data, params));
 	}
 }
 
 
 
-double ISA::evaluate(const MatrixXd& data, const Parameters params) {
+MatrixXd ISA::sampleAIS(const MatrixXd& data, const Parameters& params) {
+	MatrixXd logWeights(params.ais.numSamples, data.cols());
+
+	#pragma omp parallel for
+	for(int i = 0; i < params.ais.numSamples; ++i)
+		logWeights.row(i) = samplePosteriorAIS(data, params).second;
+
+	return logWeights;
+}
+
+
+
+double ISA::evaluate(const MatrixXd& data, const Parameters& params) {
 	return -logLikelihood(data, params).mean() / log(2.) / dim();
 }

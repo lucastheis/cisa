@@ -104,18 +104,18 @@ class ISA : public Distribution {
 		virtual void train(const MatrixXd& data, Parameters params = Parameters());
 		virtual void trainPrior(
 			const MatrixXd& states,
-			const Parameters params = Parameters());
+			const Parameters& params = Parameters());
 		virtual bool trainSGD(
 			const MatrixXd& complData,
 			const MatrixXd& complBasis,
-			const Parameters params = Parameters());
+			const Parameters& params = Parameters());
 		virtual bool trainLBFGS(
 			const MatrixXd& complData,
 			const MatrixXd& complBasis,
-			const Parameters params = Parameters());
+			const Parameters& params = Parameters());
 		virtual void trainMP(
 			const MatrixXd& data,
-			const Parameters params = Parameters());
+			const Parameters& params = Parameters());
 
 		virtual MatrixXd sample(int numSamples = 1);
 		virtual MatrixXd samplePrior(int numSamples = 1);
@@ -123,22 +123,23 @@ class ISA : public Distribution {
 		virtual MatrixXd samplePosterior(
 			const MatrixXd& data,
 			const MatrixXd& states,
-			const Parameters params = Parameters());
+			const Parameters& params = Parameters());
 		virtual pair<MatrixXd, MatrixXd> samplePosteriorAIS(
 			const MatrixXd& data,
-			const Parameters params = Parameters());
-		virtual MatrixXd samplePosterior(const MatrixXd& data, const Parameters params = Parameters());
-		virtual MatrixXd sampleNullspace(const MatrixXd& data, const Parameters params = Parameters());
+			const Parameters& params = Parameters());
+		virtual MatrixXd samplePosterior(const MatrixXd& data, const Parameters& params = Parameters());
+		virtual MatrixXd sampleNullspace(const MatrixXd& data, const Parameters& params = Parameters());
+		virtual MatrixXd sampleAIS(const MatrixXd& data, const Parameters& params = Parameters());
 
-		virtual MatrixXd matchingPursuit(const MatrixXd& data, const Parameters params = Parameters());
+		virtual MatrixXd matchingPursuit(const MatrixXd& data, const Parameters& params = Parameters());
 
 		virtual MatrixXd priorLogLikelihood(const MatrixXd& states);
 		virtual MatrixXd priorEnergy(const MatrixXd& states);
 		virtual MatrixXd priorEnergyGradient(const MatrixXd& states);
 
 		virtual Array<double, 1, Dynamic> logLikelihood(const MatrixXd& data);
-		virtual Array<double, 1, Dynamic> logLikelihood(const MatrixXd& data, const Parameters params);
-		virtual double evaluate(const MatrixXd& data, const Parameters params = Parameters());
+		virtual Array<double, 1, Dynamic> logLikelihood(const MatrixXd& data, const Parameters& params);
+		virtual double evaluate(const MatrixXd& data, const Parameters& params = Parameters());
 
 	protected:
 		int mNumVisibles;

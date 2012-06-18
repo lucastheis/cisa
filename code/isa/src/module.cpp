@@ -34,6 +34,7 @@ static PyMethodDef ISA_methods[] = {
 	{"sample_posterior", (PyCFunction)ISA_sample_posterior, METH_VARARGS|METH_KEYWORDS, 0},
 	{"sample_posterior_ais", (PyCFunction)ISA_sample_posterior_ais, METH_VARARGS|METH_KEYWORDS, 0},
 	{"sample_scales", (PyCFunction)ISA_sample_scales, METH_VARARGS|METH_KEYWORDS, 0},
+	{"sample_ais", (PyCFunction)ISA_sample_ais, METH_VARARGS|METH_KEYWORDS, 0},
 	{"matching_pursuit", (PyCFunction)ISA_matching_pursuit, METH_VARARGS|METH_KEYWORDS, 0},
 	{"prior_energy", (PyCFunction)ISA_prior_energy, METH_VARARGS|METH_KEYWORDS, 0},
 	{"prior_energy_gradient", (PyCFunction)ISA_prior_energy_gradient, METH_VARARGS|METH_KEYWORDS, 0},
