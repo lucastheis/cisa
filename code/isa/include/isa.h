@@ -30,6 +30,7 @@ class ISA : public Distribution {
 				bool adaptive;
 				bool trainPrior;
 				bool trainBasis;
+				bool mergeSubspaces;
 				bool persistent;
 				bool orthogonalize;
 				Callback* callback;
@@ -72,6 +73,13 @@ class ISA : public Distribution {
 					int numIter;
 					int numSamples;
 				} ais;
+
+				struct {
+					int verbosity;
+					int maxMerge;
+					int maxIter;
+					double threshold;
+				} merge;
 
 				Parameters();
 				Parameters(const Parameters& params);
@@ -116,6 +124,7 @@ class ISA : public Distribution {
 		virtual void trainMP(
 			const MatrixXd& data,
 			const Parameters& params = Parameters());
+		virtual MatrixXd mergeSubspaces(MatrixXd states, const Parameters& params = Parameters());
 
 		virtual MatrixXd sample(int numSamples = 1);
 		virtual MatrixXd samplePrior(int numSamples = 1);

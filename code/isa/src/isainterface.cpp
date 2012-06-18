@@ -23,26 +23,26 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 			else
 				throw Exception("verbosity should be of type `int`.");
 
-		PyObject* trainingMethod = PyDict_GetItemString(parameters, "training_method");
-		if(trainingMethod)
-			if(PyString_Check(trainingMethod))
-				params.trainingMethod = PyString_AsString(trainingMethod);
+		PyObject* training_method = PyDict_GetItemString(parameters, "training_method");
+		if(training_method)
+			if(PyString_Check(training_method))
+				params.trainingMethod = PyString_AsString(training_method);
 			else
 				throw Exception("training_method should be of type `string`.");
 
-		PyObject* samplingMethod = PyDict_GetItemString(parameters, "sampling_method");
-		if(samplingMethod)
-			if(PyString_Check(samplingMethod))
-				params.samplingMethod = PyString_AsString(samplingMethod);
+		PyObject* sampling_method = PyDict_GetItemString(parameters, "sampling_method");
+		if(sampling_method)
+			if(PyString_Check(sampling_method))
+				params.samplingMethod = PyString_AsString(sampling_method);
 			else
 				throw Exception("sampling_method should be of type `string`.");
 
-		PyObject* maxIter = PyDict_GetItemString(parameters, "max_iter");
-		if(maxIter)
-			if(PyInt_Check(maxIter))
-				params.maxIter = PyInt_AsLong(maxIter);
-			else if(PyFloat_Check(maxIter))
-				params.maxIter = static_cast<int>(PyFloat_AsDouble(maxIter));
+		PyObject* max_iter = PyDict_GetItemString(parameters, "max_iter");
+		if(max_iter)
+			if(PyInt_Check(max_iter))
+				params.maxIter = PyInt_AsLong(max_iter);
+			else if(PyFloat_Check(max_iter))
+				params.maxIter = static_cast<int>(PyFloat_AsDouble(max_iter));
 			else
 				throw Exception("max_iter should be of type `int`.");
 
@@ -53,17 +53,24 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 			else
 				throw Exception("adaptive should be of type `bool`.");
 
-		PyObject* trainPrior = PyDict_GetItemString(parameters, "train_prior");
-		if(trainPrior)
-			if(PyBool_Check(trainPrior))
-				params.trainPrior = (trainPrior == Py_True);
+		PyObject* merge_subspaces = PyDict_GetItemString(parameters, "merge_subspaces");
+		if(merge_subspaces)
+			if(PyBool_Check(merge_subspaces))
+				params.mergeSubspaces = (merge_subspaces == Py_True);
+			else
+				throw Exception("merge_subspaces should be of type `bool`.");
+
+		PyObject* train_prior = PyDict_GetItemString(parameters, "train_prior");
+		if(train_prior)
+			if(PyBool_Check(train_prior))
+				params.trainPrior = (train_prior == Py_True);
 			else
 				throw Exception("train_prior should be of type `bool`.");
 
-		PyObject* trainBasis = PyDict_GetItemString(parameters, "train_basis");
-		if(trainBasis)
-			if(PyBool_Check(trainBasis))
-				params.trainBasis = (trainBasis == Py_True);
+		PyObject* train_basis = PyDict_GetItemString(parameters, "train_basis");
+		if(train_basis)
+			if(PyBool_Check(train_basis))
+				params.trainBasis = (train_basis == Py_True);
 			else
 				throw Exception("train_basis should be of type `bool`.");
 
@@ -292,6 +299,44 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 				else
 					throw Exception("ais.num_samples should be of type `int`.");
 		}
+
+		PyObject* merge = PyDict_GetItemString(parameters, "merge");
+
+		if(!merge)
+			merge = PyDict_GetItemString(parameters, "MERGE");
+
+
+		if(merge && PyDict_Check(merge)) {
+			PyObject* verbosity = PyDict_GetItemString(merge, "verbosity");
+			if(verbosity)
+				if(PyInt_Check(verbosity))
+					params.merge.verbosity = PyInt_AsLong(verbosity);
+				else
+					throw Exception("merge.verbosity should be of type `int`.");
+
+			PyObject* max_merge = PyDict_GetItemString(merge, "max_merge");
+			if(max_merge)
+				if(PyInt_Check(max_merge))
+					params.merge.maxMerge = PyInt_AsLong(max_merge);
+				else
+					throw Exception("merge.max_merge should be of type `int`.");
+
+			PyObject* max_iter = PyDict_GetItemString(merge, "max_iter");
+			if(max_iter)
+				if(PyInt_Check(max_iter))
+					params.merge.maxIter = PyInt_AsLong(max_iter);
+				else
+					throw Exception("merge.max_iter should be of type `int`.");
+
+			PyObject* threshold = PyDict_GetItemString(merge, "threshold");
+			if(threshold)
+				if(PyFloat_Check(threshold))
+					params.merge.threshold = PyFloat_AsDouble(threshold);
+				else if(PyInt_Check(threshold))
+					params.merge.threshold = static_cast<double>(PyInt_AsLong(threshold));
+				else
+					throw Exception("merge.threshold should be of type `float`.");
+		}
 	}
 
 	return params;
@@ -507,6 +552,7 @@ PyObject* ISA_default_parameters(ISAObject* self) {
 	PyObject* gsm = PyDict_New();
 	PyObject* gibbs = PyDict_New();
 	PyObject* ais = PyDict_New();
+	PyObject* merge = PyDict_New();
 
 	PyDict_SetItemString(parameters, "verbosity", PyInt_FromLong(params.verbosity));
 	PyDict_SetItemString(parameters, "training_method",
@@ -525,11 +571,27 @@ PyObject* ISA_default_parameters(ISAObject* self) {
 		Py_INCREF(Py_False);
 	}
 
+	if(params.trainBasis) {
+		PyDict_SetItemString(parameters, "train_basis", Py_True);
+		Py_INCREF(Py_True);
+	} else {
+		PyDict_SetItemString(parameters, "train_basis", Py_False);
+		Py_INCREF(Py_False);
+	}
+
 	if(params.trainPrior) {
 		PyDict_SetItemString(parameters, "train_prior", Py_True);
 		Py_INCREF(Py_True);
 	} else {
 		PyDict_SetItemString(parameters, "train_prior", Py_False);
+		Py_INCREF(Py_False);
+	}
+
+	if(params.mergeSubspaces) {
+		PyDict_SetItemString(parameters, "merge_subspaces", Py_True);
+		Py_INCREF(Py_True);
+	} else {
+		PyDict_SetItemString(parameters, "merge_subspaces", Py_False);
 		Py_INCREF(Py_False);
 	}
 
@@ -543,7 +605,7 @@ PyObject* ISA_default_parameters(ISAObject* self) {
 		Py_INCREF(Py_True);
 	} else {
 		PyDict_SetItemString(sgd, "shuffle", Py_False);
-		Py_DECREF(Py_False);
+		Py_INCREF(Py_False);
 	}
 
 	if(params.sgd.pocket) {
@@ -551,7 +613,7 @@ PyObject* ISA_default_parameters(ISAObject* self) {
 		Py_INCREF(Py_True);
 	} else {
 		PyDict_SetItemString(sgd, "pocket", Py_False);
-		Py_DECREF(Py_False);
+		Py_INCREF(Py_False);
 	}
 
 	PyDict_SetItemString(lbfgs, "max_iter", PyInt_FromLong(params.lbfgs.maxIter));
@@ -573,12 +635,18 @@ PyObject* ISA_default_parameters(ISAObject* self) {
 	PyDict_SetItemString(ais, "num_iter", PyInt_FromLong(params.ais.numIter));
 	PyDict_SetItemString(ais, "num_samples", PyInt_FromLong(params.ais.numSamples));
 
+	PyDict_SetItemString(merge, "verbosity", PyInt_FromLong(params.merge.verbosity));
+	PyDict_SetItemString(merge, "max_merge", PyInt_FromLong(params.merge.maxMerge));
+	PyDict_SetItemString(merge, "max_iter", PyInt_FromLong(params.merge.maxIter));
+	PyDict_SetItemString(merge, "threhold", PyFloat_FromDouble(params.merge.threshold));
+
 	PyDict_SetItemString(parameters, "sgd", sgd);
 	PyDict_SetItemString(parameters, "lbfgs", lbfgs);
 	PyDict_SetItemString(parameters, "mp", mp);
 	PyDict_SetItemString(parameters, "gsm", gsm);
 	PyDict_SetItemString(parameters, "gibbs", gibbs);
 	PyDict_SetItemString(parameters, "ais", ais);
+	PyDict_SetItemString(parameters, "merge", merge);
 
 	Py_DECREF(sgd);
 	Py_DECREF(lbfgs);
@@ -586,6 +654,7 @@ PyObject* ISA_default_parameters(ISAObject* self) {
 	Py_DECREF(gsm);
 	Py_DECREF(gibbs);
 	Py_DECREF(ais);
+	Py_DECREF(merge);
 
 	return parameters;
 }
@@ -967,12 +1036,12 @@ PyObject* ISA_loglikelihood(ISAObject* self, PyObject* args, PyObject* kwds) {
 	}
 
 	try {
-		if(return_all)
-			return PyArray_FromMatrixXd(self->isa->logLikelihood(
+		if(!self->isa->complete() && return_all)
+			return PyArray_FromMatrixXd(self->isa->sampleAIS(
 				PyArray_ToMatrixXd(data),
 				PyObject_ToParameters(self, parameters)));
 		else
-			return PyArray_FromMatrixXd(self->isa->sampleAIS(
+			return PyArray_FromMatrixXd(self->isa->logLikelihood(
 				PyArray_ToMatrixXd(data),
 				PyObject_ToParameters(self, parameters)));
 

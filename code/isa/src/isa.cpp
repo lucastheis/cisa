@@ -54,6 +54,7 @@ ISA::Parameters::Parameters() {
 	adaptive = true;
 	trainPrior = true;
 	trainBasis = true;
+	mergeSubspaces = false;
 	orthogonalize = true;
 	callback = 0;
 	persistent = true;
@@ -84,6 +85,11 @@ ISA::Parameters::Parameters() {
 	ais.verbosity = 0;
 	ais.numIter = 100;
 	ais.numSamples = 10;
+
+	merge.verbosity = 0;
+	merge.maxMerge = 100;
+	merge.maxIter = 10;
+	merge.threshold = 0.;
 }
 
 
@@ -96,6 +102,7 @@ ISA::Parameters::Parameters(const Parameters& params) :
 	adaptive(params.adaptive),
 	trainPrior(params.trainPrior),
 	trainBasis(params.trainBasis),
+	mergeSubspaces(params.mergeSubspaces),
 	persistent(params.persistent),
 	orthogonalize(params.orthogonalize),
 	callback(0),
@@ -104,7 +111,8 @@ ISA::Parameters::Parameters(const Parameters& params) :
 	mp(params.mp),
 	gsm(params.gsm),
 	gibbs(params.gibbs),
-	ais(params.ais)
+	ais(params.ais),
+	merge(params.merge)
 {
 	if(params.callback)
 		callback = params.callback->copy();
@@ -132,6 +140,7 @@ ISA::Parameters& ISA::Parameters::operator=(const Parameters& params) {
 	adaptive = params.adaptive;
 	trainPrior = params.trainPrior;
 	trainBasis = params.trainBasis;
+	mergeSubspaces = params.mergeSubspaces;
 	orthogonalize = params.orthogonalize;
 	persistent = params.persistent;
 	callback = params.callback ? params.callback->copy() : 0;
@@ -142,6 +151,7 @@ ISA::Parameters& ISA::Parameters::operator=(const Parameters& params) {
 	gsm = params.gsm;
 	gibbs = params.gibbs;
 	ais = params.ais;
+	merge = params.merge;
 
 	return *this;
 }
@@ -302,6 +312,9 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 			// optimize marginal distributions
 			trainPrior(mHiddenStates, params);
 
+		if(params.mergeSubspaces)
+			mergeSubspaces(mHiddenStates, params);
+
 		if(params.trainBasis) {
 			// optimize basis
 			bool improved;
@@ -336,7 +349,7 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 			cout << endl;
 		}
 
-		if(params.orthogonalize)
+		if(params.trainBasis && params.orthogonalize)
 			orthogonalize();
 
 		if(params.callback)
@@ -514,6 +527,110 @@ MatrixXd ISA::matchingPursuit(const MatrixXd& data, const Parameters& params) {
 
 
 
+MatrixXd ISA::mergeSubspaces(MatrixXd states, const Parameters& params) {
+	if(numSubspaces() > 1) {
+		vector<int> from(numSubspaces());
+		for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
+			from[i] = f;
+
+		// compute subspace energies
+		MatrixXd energies(numSubspaces(), states.cols());
+		#pragma omp parallel for
+		for(int i = 0; i < numSubspaces(); ++i)
+			energies.row(i) = states.middleRows(from[i], mSubspaces[i].dim()).colwise().norm();
+
+		// compute correlations between subspaces
+		MatrixXd corr = corrcoef(energies).triangularView<StrictlyLower>();
+
+		for(int i = 0; i < params.merge.maxMerge; ++i) {
+			// find the two maximally correlated subspaces
+			int row, col;
+			corr.colwise().maxCoeff().maxCoeff(&col);
+			corr.col(col).maxCoeff(&row);
+
+			if(corr(row, col) <= 0.)
+				break;
+
+			corr(row, col) = 0.;
+
+			// data corresponding to subspaces
+			MatrixXd statesRow = states.middleRows(from[row], mSubspaces[row].dim());
+			MatrixXd statesCol = states.middleRows(from[col], mSubspaces[col].dim());
+			MatrixXd statesJnt(mSubspaces[row].dim() + mSubspaces[col].dim(), states.cols());
+
+			statesJnt << statesRow, statesCol;
+
+			// train a joint model
+			GSM gsm(statesJnt.rows(), mSubspaces[row].numScales());
+			gsm.setScales(mSubspaces[row].scales());
+			gsm.train(statesJnt, params.merge.maxIter);
+
+			// log-likelihood improvement
+			double mi = gsm.logLikelihood(statesJnt).mean()
+				- mSubspaces[row].logLikelihood(statesRow).mean()
+				- mSubspaces[col].logLikelihood(statesCol).mean();
+
+			if(mi > params.merge.threshold) {
+				mSubspaces.push_back(gsm);
+
+				// indices of subspace dimensions
+				vector<int> indices;
+				for(int i = 0; i < mSubspaces[row].dim(); ++i)
+					indices.push_back(from[row] + i);
+				for(int i = 0; i < mSubspaces[col].dim(); ++i)
+					indices.push_back(from[col] + i);
+
+				// rearrange basis vectors
+				MatrixXd basisRow = mBasis.middleCols(from[row], mSubspaces[row].dim());
+				MatrixXd basisCol = mBasis.middleCols(from[col], mSubspaces[col].dim());
+
+				mBasis << deleteCols(mBasis, indices), basisRow, basisCol;
+
+				// rearrange hidden states
+				MatrixXd statesRow = states.middleRows(from[row], mSubspaces[row].dim());
+				MatrixXd statesCol = states.middleRows(from[col], mSubspaces[col].dim());
+
+				states << deleteRows(states, indices), statesRow, statesCol;
+
+				// remove subspaces from correlation matrix
+				vector<int> rc;
+				rc.push_back(row);
+				rc.push_back(col);
+				corr = deleteRows(corr, rc);
+				corr = deleteCols(corr, rc);
+
+				// update indices in from array
+				for(int k = row + 1; k < numSubspaces(); ++k)
+					from[k] -= mSubspaces[k].dim();
+				for(int k = col + 1; k < numSubspaces(); ++k)
+					from[k] -= mSubspaces[k].dim();
+
+				if(row < col) {
+					from.erase(from.begin() + col);
+					from.erase(from.begin() + row);
+					mSubspaces.erase(mSubspaces.begin() + col);
+					mSubspaces.erase(mSubspaces.begin() + row);
+				} else {
+					from.erase(from.begin() + row);
+					from.erase(from.begin() + col);
+					mSubspaces.erase(mSubspaces.begin() + row);
+					mSubspaces.erase(mSubspaces.begin() + col);
+				}
+
+				if(params.merge.verbosity > 0)
+					cout << "Merged subspaces." << endl;
+
+				if(!corr.size())
+					break;
+			}
+		}
+	}
+
+	return states;
+}
+
+
+
 MatrixXd ISA::sample(int numSamples) {
 	return basis() * samplePrior(numSamples);
 }
@@ -523,6 +640,7 @@ MatrixXd ISA::sample(int numSamples) {
 MatrixXd ISA::samplePrior(int numSamples) {
 	MatrixXd samples = MatrixXd::Zero(numHiddens(), numSamples);
 
+	// TODO: parallelize
 	for(int from = 0, i = 0; i < numSubspaces(); from += mSubspaces[i].dim(), ++i)
 		samples.middleRows(from, mSubspaces[i].dim()) =
 			mSubspaces[i].sample(numSamples);
@@ -658,10 +776,10 @@ pair<MatrixXd, MatrixXd> ISA::samplePosteriorAIS(const MatrixXd& data, const Par
 		X = data - A * Y;
 
 		#pragma omp parallel for
- 		for(int j = 0; j < data.cols(); ++j) {
- 			MatrixXd vAt = v.col(j).asDiagonal() * At;
-  			Y.col(j) = WX.col(j) + Q * (Y.col(j) + vAt * (A * vAt).llt().solve(X.col(j)));
- 		}
+		for(int j = 0; j < data.cols(); ++j) {
+			MatrixXd vAt = v.col(j).asDiagonal() * At;
+			Y.col(j) = WX.col(j) + Q * (Y.col(j) + vAt * (A * vAt).llt().solve(X.col(j)));
+		}
 
 		logWeights += isa.priorEnergy(Y);
 
@@ -683,7 +801,7 @@ MatrixXd ISA::sampleNullspace(const MatrixXd& data, const Parameters& params) {
 
 
 MatrixXd ISA::priorLogLikelihood(const MatrixXd& states) {
-	MatrixXd logLik = MatrixXd::Zero(states.rows(), states.cols());
+	MatrixXd logLik = MatrixXd::Zero(numSubspaces(), states.cols());
 
 	int from[numSubspaces()];
 	for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
@@ -691,8 +809,8 @@ MatrixXd ISA::priorLogLikelihood(const MatrixXd& states) {
 
 	#pragma omp parallel for
 	for(int i = 0; i < numSubspaces(); ++i)
-		logLik.middleRows(from[i], mSubspaces[i].dim()) =
-			mSubspaces[i].logLikelihood(states.middleRows(from[i], mSubspaces[i].dim()));
+		logLik.row(i) = mSubspaces[i].logLikelihood(
+			states.middleRows(from[i], mSubspaces[i].dim()));
 
 	return logLik.colwise().sum();
 }
@@ -700,7 +818,7 @@ MatrixXd ISA::priorLogLikelihood(const MatrixXd& states) {
 
 
 MatrixXd ISA::priorEnergy(const MatrixXd& states) {
-	MatrixXd energy = MatrixXd::Zero(states.rows(), states.cols());
+	MatrixXd energy = MatrixXd::Zero(numSubspaces(), states.cols());
 
 	int from[numSubspaces()];
 	for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
@@ -708,8 +826,8 @@ MatrixXd ISA::priorEnergy(const MatrixXd& states) {
 
 	#pragma omp parallel for
 	for(int i = 0; i < numSubspaces(); ++i)
-		energy.middleRows(from[i], mSubspaces[i].dim()) =
-			mSubspaces[i].energy(states.middleRows(from[i], mSubspaces[i].dim()));
+		energy.row(i) = mSubspaces[i].energy(
+			states.middleRows(from[i], mSubspaces[i].dim()));
 
 	return energy.colwise().sum();
 }
@@ -750,20 +868,7 @@ Array<double, 1, Dynamic> ISA::logLikelihood(const MatrixXd& data, const Paramet
 		// compute log-determinant of basis
 		double logDet = basisLU.matrixLU().diagonal().array().abs().log().sum();
 
-		// multiplication is faster than solve()
-		MatrixXd states = basisLU.inverse() * data;
-		MatrixXd logLik = MatrixXd::Zero(states.rows(), states.cols());
-
-		int from[numSubspaces()];
-		for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
-			from[i] = f;
-
-		#pragma omp parallel for
-		for(int i = 0; i < numSubspaces(); ++i)
-			logLik.middleRows(from[i], mSubspaces[i].dim()) =
-				mSubspaces[i].logLikelihood(states.middleRows(from[i], mSubspaces[i].dim()));
-
-		return logLik.colwise().sum().array() - logDet;
+		return priorLogLikelihood(basisLU.inverse() * data).array() - logDet;
 	} else {
 		return logmeanexp(sampleAIS(data, params));
 	}

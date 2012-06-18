@@ -29,6 +29,7 @@ class Tests(unittest.TestCase):
 		self.assertEqual(sys.getrefcount(params['gsm']) - 1, 1)
 		self.assertEqual(sys.getrefcount(params['gibbs']) - 1, 1)
 		self.assertEqual(sys.getrefcount(params['ais']) - 1, 1)
+		self.assertEqual(sys.getrefcount(params['merge']) - 1, 1)
 
 
 
@@ -228,7 +229,7 @@ class Tests(unittest.TestCase):
 
 
 	def test_loglikelihood(self):
-		isa = ISA(7)
+		isa = ISA(7, ssize=3)
 
 		samples = isa.sample(100)
 

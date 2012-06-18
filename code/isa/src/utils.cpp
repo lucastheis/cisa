@@ -56,6 +56,14 @@ MatrixXd covariance(const MatrixXd& data) {
 
 
 
+MatrixXd corrcoef(const MatrixXd& data) {
+	MatrixXd C = covariance(data);
+	VectorXd c = C.diagonal();
+	return C.array() / (c * c.transpose()).array().sqrt();
+}
+
+
+
 MatrixXd normalize(const MatrixXd& matrix) {
 	return matrix.array().rowwise() / matrix.colwise().norm().eval().array();
 }
@@ -64,4 +72,44 @@ MatrixXd normalize(const MatrixXd& matrix) {
 
 double logDetPD(const MatrixXd& matrix) {
 	return 2. * matrix.llt().matrixLLT().diagonal().array().log().sum();
+}
+
+
+
+MatrixXd deleteRows(const MatrixXd& matrix, vector<int> indices) {
+	MatrixXd result(matrix.rows() - indices.size(), matrix.cols());
+
+	sort(indices.begin(), indices.end());
+
+	int idx = 0;
+
+	for(int i = 0; i < matrix.rows(); ++i) {
+		if(indices[idx] == i) {
+			++idx;
+			continue;
+		}
+		result.row(i - idx) = matrix.row(i);
+	}
+
+	return result;
+}
+
+
+
+MatrixXd deleteCols(const MatrixXd& matrix, vector<int> indices) {
+	MatrixXd result(matrix.rows(), matrix.cols() - indices.size());
+
+	sort(indices.begin(), indices.end());
+
+	int idx = 0;
+
+	for(int i = 0; i < matrix.cols(); ++i) {
+		if(indices[idx] == i) {
+			++idx;
+			continue;
+		}
+		result.col(i - idx) = matrix.col(i);
+	}
+
+	return result;
 }

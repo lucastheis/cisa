@@ -26,9 +26,9 @@ bool GSM::train(const MatrixXd& data, int maxIter, double tol) {
 		// compute unnormalized posterior over mixture components (E)
 		ArrayXXd post = posterior(data, sqNorms);
 
-		// update parameters (M)
-		mScales = ((post.rowwise() * sqNorms.array()).rowwise().mean()
-			/ (mDim * post.rowwise().mean())).sqrt();
+		// update parameters with slight regularization(M)
+		mScales = (((post.rowwise() * sqNorms.array()).rowwise().mean() + 1e-6)
+			/ (mDim * post.rowwise().mean() + 3e-6)).sqrt();
 
 		if(tol > 0. && i % 5 == 0) {
 			double logLikNew = logLikelihood(data, sqNorms).mean();
