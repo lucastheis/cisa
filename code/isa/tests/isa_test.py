@@ -7,7 +7,7 @@ sys.path.append('./build/lib.linux-x86_64-2.7')
 
 from isa import ISA
 from numpy import sqrt, sum, square, dot, var, eye, cov, diag, std, max, asarray, mean
-from numpy import ones, cos, sin
+from numpy import ones, cos, sin, all, sort
 from numpy.linalg import inv, eig
 from numpy.random import randn, permutation
 from scipy.optimize import check_grad
@@ -239,6 +239,20 @@ class Tests(unittest.TestCase):
 		# difference between loglik and -energy should be const
 		self.assertTrue(var(loglik + energy) < 1e-10)
 
+		isa = ISA(2, 3)
+
+		samples = isa.sample(20)
+
+		params = isa.default_parameters()
+		params['ais']['num_samples'] = 5
+		params['ais']['num_iter'] = 10
+
+		loglik = isa.loglikelihood(samples, params, return_all=True)
+
+		# simple sanity checks
+		self.assertTrue(loglik.shape[0], params['ais']['num_samples'])
+		self.assertTrue(loglik.shape[1], samples.shape[1])
+
 
 
 	def test_callback(self):
@@ -362,6 +376,31 @@ class Tests(unittest.TestCase):
 		ll2 = isa2.evaluate(data)
 
 		self.assertLess(abs(ll1 - ll2), 1e-5)
+
+
+
+	def test_merge(self):
+		isa1 = ISA(5, ssize=2)
+		isa2 = ISA(5)
+
+		isa1.initialize()
+		isa1.orthogonalize()
+
+		isa2.initialize()
+		isa2.A = isa1.A
+
+		params = isa2.default_parameters()
+		params['train_basis'] = False
+		params['merge_subspaces'] = True
+		params['merge']['verbosity'] = 0
+
+		isa2.train(isa1.sample(10000), params)
+
+		ssizes1 = [gsm.dim for gsm in isa1.subspaces()]
+		ssizes2 = [gsm.dim for gsm in isa2.subspaces()]
+
+		# algorithm should be able to recover subspace sizes
+		self.assertTrue(all(sort(ssizes1) == sort(ssizes2)))
 
 
 

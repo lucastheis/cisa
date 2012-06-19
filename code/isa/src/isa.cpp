@@ -206,6 +206,7 @@ void ISA::initialize() {
 			// fit GSM to multivariate Laplace distribution
 			gsm = GSM(mSubspaces[i].dim(), mSubspaces[i].numScales());
 			gsm.train(data, 200, 1e-8);
+			gsm.normalize();
 		}
 
 		mSubspaces[i].setScales(gsm.scales());
