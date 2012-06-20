@@ -335,7 +335,7 @@ class Tests(unittest.TestCase):
 
 		states_post = isa.sample_posterior(isa.sample(1000), params)
 		states_prio = isa.sample_prior(states_post.shape[1])
-		
+
 		states_post = states_post.flatten()
 		states_post = states_post[permutation(states_post.size)]
 		states_prio = states_prio.flatten()
@@ -345,6 +345,30 @@ class Tests(unittest.TestCase):
 		p = ks_2samp(states_post, states_prio)[1]
 
 		self.assertGreater(p, 0.0001)
+
+		samples = isa.sample(100)
+		states = isa.sample_posterior(samples, params)
+
+		# reconstruction should be perfect
+		self.assertLess(sum(square(dot(isa.A, states) - samples).flatten()), 1e-10)
+
+
+
+	def test_sample_posterior_ais(self):
+		isa = ISA(2, 3, num_scales=10)
+		isa.A = asarray([[1., 0., 1.], [0., 1., 1.]])
+
+		isa.initialize()
+
+		params = isa.default_parameters()
+		params['ais']['verbosity'] = 0
+		params['ais']['num_iter'] = 100
+
+		samples = isa.sample(100)
+		states, _ = isa.sample_posterior_ais(samples, params)
+
+		# reconstruction should be perfect
+		self.assertLess(sum(square(dot(isa.A, states) - samples).flatten()), 1e-10)
 
 
 
@@ -376,6 +400,29 @@ class Tests(unittest.TestCase):
 		ll2 = isa2.evaluate(data)
 
 		self.assertLess(abs(ll1 - ll2), 1e-5)
+
+		isa1 = ISA(2)
+		isa1.initialize()
+
+		# equivalent overcomplete model
+		isa2 = ISA(2, 4)
+
+		isa2.set_subspaces(isa1.subspaces() * 2)
+		A = isa2.basis()
+		A[:, :2] = isa1.basis()
+		A[:, 2:] = 0.
+		isa2.set_basis(A)
+
+		data = isa1.sample(100)
+
+		params = isa2.default_parameters()
+		params['ais']['num_iter'] = 100
+		params['ais']['num_samples'] = 100
+
+		ll1 = isa1.evaluate(data)
+		ll2 = isa2.evaluate(data, params)
+
+		self.assertLess(abs(ll1 - ll2), 0.1)
 
 
 

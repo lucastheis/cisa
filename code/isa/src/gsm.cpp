@@ -26,7 +26,7 @@ bool GSM::train(const MatrixXd& data, int maxIter, double tol) {
 		// compute unnormalized posterior over mixture components (E)
 		ArrayXXd post = posterior(data, sqNorms);
 
-		// update parameters with slight regularization(M)
+		// update parameters with slight regularization (M)
 		mScales = (((post.rowwise() * sqNorms.array()).rowwise().mean() + 1e-6)
 			/ (mDim * post.rowwise().mean() + 3e-6)).sqrt();
 

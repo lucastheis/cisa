@@ -492,6 +492,7 @@ void ISA::trainMP(const MatrixXd& data, const Parameters& params) {
 
 			// update filter matrix
 			mBasis += params.mp.stepWidth * P;
+
 			mBasis = normalize(mBasis);
 		}
 
@@ -588,10 +589,7 @@ MatrixXd ISA::mergeSubspaces(MatrixXd states, const Parameters& params) {
 				mBasis << deleteCols(mBasis, indices), basisRow, basisCol;
 
 				// rearrange hidden states
-				MatrixXd statesRow = states.middleRows(from[row], mSubspaces[row].dim());
-				MatrixXd statesCol = states.middleRows(from[col], mSubspaces[col].dim());
-
-				states << deleteRows(states, indices), statesRow, statesCol;
+				states << deleteRows(states, indices), statesJnt;
 
 				// remove subspaces from correlation matrix
 				vector<int> rc;
@@ -622,6 +620,7 @@ MatrixXd ISA::mergeSubspaces(MatrixXd states, const Parameters& params) {
 					cout << "Merged subspaces." << endl;
 
 				if(!corr.size())
+					// there's only one big subspace left
 					break;
 			}
 		}
@@ -757,21 +756,21 @@ pair<MatrixXd, MatrixXd> ISA::samplePosteriorAIS(const MatrixXd& data, const Par
 	MatrixXd Y = WX + Q * isa.samplePrior(data.cols());
 
 	// importance weights
-	MatrixXd logWeights = (B * Y).colwise().squaredNorm().array() / 2. 
+	MatrixXd logWeights = (B * Y).colwise().squaredNorm().array() / 2.
 		+ (numHiddens() - numVisibles()) * log(2. * PI) / 2. - logDetPD(A * At) / 2.;
 
 	for(int i = 0; i < params.ais.numIter; ++i) {
 		// adjust proposal distribution
 		for(int j = 0; j < isa.numSubspaces(); ++j)
 			isa.mSubspaces[j].setScales(
-				annealingWeights[i] * isa.mSubspaces[j].scales() + (1. - annealingWeights[i]));
+				annealingWeights[i] * mSubspaces[j].scales() + (1. - annealingWeights[i]));
 
 		logWeights -= isa.priorEnergy(Y);
 
 		// sample scales
 		S = isa.sampleScales(Y);
 		v = S.array().square();
-		
+
 		// sample source variables
 		Y = sampleNormal(numHiddens(), data.cols()) * S.array();
 		X = data - A * Y;

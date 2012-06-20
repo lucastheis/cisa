@@ -6,6 +6,7 @@
 #include "gsm.h"
 #include <string>
 #include <vector>
+#include <iostream>
 
 using namespace Eigen;
 using std::string;
