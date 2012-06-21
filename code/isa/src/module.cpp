@@ -23,6 +23,8 @@ static PyMethodDef ISA_methods[] = {
 	{"default_parameters", (PyCFunction)ISA_default_parameters, METH_VARARGS, 0},
 	{"basis", (PyCFunction)ISA_basis, METH_NOARGS, 0},
 	{"set_basis", (PyCFunction)ISA_set_basis, METH_VARARGS|METH_KEYWORDS, 0},
+	{"hidden_states", (PyCFunction)ISA_hidden_states, METH_NOARGS, 0},
+	{"set_hidden_states", (PyCFunction)ISA_set_hidden_states, METH_VARARGS|METH_KEYWORDS, 0},
 	{"nullspace_basis", (PyCFunction)ISA_nullspace_basis, METH_NOARGS, 0},
 	{"subspaces", (PyCFunction)ISA_subspaces, METH_NOARGS, 0},
 	{"set_subspaces", (PyCFunction)ISA_set_subspaces, METH_VARARGS|METH_KEYWORDS, 0},

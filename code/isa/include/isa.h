@@ -103,6 +103,9 @@ class ISA : public Distribution {
 		inline MatrixXd basis();
 		inline void setBasis(const MatrixXd& basis);
 
+		inline MatrixXd hiddenStates();
+		inline void setHiddenStates(const MatrixXd& hiddenStates);
+
 		virtual MatrixXd nullspaceBasis();
 
 		virtual void initialize();
@@ -220,6 +223,18 @@ inline void ISA::setBasis(const MatrixXd& basis) {
 		throw Exception("Basis has wrong dimensionality.");
 
 	mBasis = basis;
+}
+
+
+
+inline MatrixXd ISA::hiddenStates() {
+	return mHiddenStates;
+}
+
+
+
+inline void ISA::setHiddenStates(const MatrixXd& hiddenStates) {
+	mHiddenStates = hiddenStates;
 }
 
 #endif

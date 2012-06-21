@@ -484,6 +484,48 @@ PyObject* ISA_nullspace_basis(ISAObject* self, PyObject* args, PyObject* kwds) {
 
 
 
+PyObject* ISA_hidden_states(ISAObject* self, PyObject*, PyObject*) {
+	try {
+		return PyArray_FromMatrixXd(self->isa->hiddenStates());
+
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+
+	return 0;
+}
+
+
+
+PyObject* ISA_set_hidden_states(ISAObject* self, PyObject* args, PyObject* kwds) {
+	char* kwlist[] = {"states", 0};
+
+	PyObject* states = 0;
+
+	// read arguments
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &states))
+		return 0;
+
+	if(!PyArray_Check(states)) {
+		PyErr_SetString(PyExc_TypeError, "Hidden states should be of type `ndarray`.");
+		return 0;
+	}
+
+	try {
+		self->isa->setHiddenStates(PyArray_ToMatrixXd(states));
+
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+
+
 PyObject* ISA_subspaces(ISAObject* self, PyObject*, PyObject*) {
 	vector<GSM> subspaces = self->isa->subspaces();
 
@@ -1089,9 +1131,11 @@ PyObject* ISA_reduce(ISAObject* self, PyObject*, PyObject*) {
 	PyObject* args = Py_BuildValue("(ii)", self->isa->numVisibles(), self->isa->numHiddens());
 
 	PyObject* basis = ISA_basis(self, 0, 0);
+	PyObject* hidden_states = ISA_hidden_states(self, 0, 0);
 	PyObject* subspaces = ISA_subspaces(self, 0, 0);
-	PyObject* state = Py_BuildValue("(OO)", basis, subspaces);
+	PyObject* state = Py_BuildValue("(OOO)", basis, subspaces, hidden_states);
 	Py_DECREF(basis);
+	Py_DECREF(hidden_states);
 	Py_DECREF(subspaces);
 
 	PyObject* result = Py_BuildValue("OOO", self->ob_type, args, state);
@@ -1106,8 +1150,9 @@ PyObject* ISA_reduce(ISAObject* self, PyObject*, PyObject*) {
 PyObject* ISA_setstate(ISAObject* self, PyObject* state, PyObject*) {
 	PyObject* basis;
 	PyObject* subspaces;
+	PyObject* hidden_states;
 
-	if(!PyArg_ParseTuple(state, "(OO)", &basis, &subspaces))
+	if(!PyArg_ParseTuple(state, "(OOO)", &basis, &subspaces, &hidden_states))
 		return 0;
 
 	PyObject* args;
@@ -1119,6 +1164,10 @@ PyObject* ISA_setstate(ISAObject* self, PyObject* state, PyObject*) {
 
 	args = Py_BuildValue("(O)", subspaces);
 	ISA_set_subspaces(self, args, kwds);
+	Py_DECREF(args);
+
+	args = Py_BuildValue("(O)", hidden_states);
+	ISA_set_hidden_states(self, args, kwds);
 	Py_DECREF(args);
 
 	Py_DECREF(kwds);

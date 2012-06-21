@@ -290,11 +290,13 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 		cout << endl;
 	}
 
-	// initialize hidden states
-	Parameters iniParams = params;
-	iniParams.gibbs.numIter = iniParams.gibbs.iniIter;
+	if(mHiddenStates.cols() != data.cols() || mHiddenStates.rows() != numHiddens()) {
+		Parameters iniParams = params;
+		iniParams.gibbs.numIter = iniParams.gibbs.iniIter;
 
-	mHiddenStates = samplePosterior(data, iniParams);
+		// initialize hidden states
+		mHiddenStates = samplePosterior(data, iniParams);
+	}
 
 	for(int i = 0; i < params.maxIter; ++i) {
 		MatrixXd complBasis(numHiddens(), numHiddens());

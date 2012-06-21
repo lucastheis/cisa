@@ -32,6 +32,9 @@ PyObject* ISA_basis(ISAObject*, PyObject*, PyObject*);
 PyObject* ISA_set_basis(ISAObject*, PyObject*, PyObject*);
 PyObject* ISA_nullspace_basis(ISAObject*, PyObject*, PyObject*);
 
+PyObject* ISA_hidden_states(ISAObject*, PyObject*, PyObject*);
+PyObject* ISA_set_hidden_states(ISAObject*, PyObject*, PyObject*);
+
 PyObject* ISA_subspaces(ISAObject*, PyObject*, PyObject*);
 PyObject* ISA_set_subspaces(ISAObject*, PyObject*, PyObject*);
 

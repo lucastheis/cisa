@@ -453,6 +453,7 @@ class Tests(unittest.TestCase):
 
 	def test_pickle(self):
 		isa0 = ISA(4, 16, ssize=3)
+		isa0.set_hidden_states(randn(16, 100))
 
 		tmp_file = mkstemp()[1]
 
@@ -468,6 +469,7 @@ class Tests(unittest.TestCase):
 		self.assertEqual(isa0.num_visibles, isa1.num_visibles)
 		self.assertEqual(isa0.num_hiddens, isa1.num_hiddens)
 		self.assertLess(max(abs(isa0.A - isa1.A)), 1e-20)
+		self.assertLess(max(abs(isa0.hidden_states() - isa1.hidden_states())), 1e-20)
 		self.assertLess(max(abs(isa0.subspaces()[1].scales - isa1.subspaces()[1].scales)), 1e-20)
 
 
