@@ -7,6 +7,7 @@
 #include <time.h>
 #include "isainterface.h"
 #include "gsminterface.h"
+#include "Eigen/Core"
 
 static PyGetSetDef ISA_getset[] = {
 	{"dim", (getter)ISA_dim, 0, 0},
@@ -178,6 +179,9 @@ PyMODINIT_FUNC initisa() {
 		return;
 	if(PyType_Ready(&GSM_type) < 0)
 		return;
+
+	// initialize Eigen
+	Eigen::initParallel();
 
 	// add types to module
 	Py_INCREF(&ISA_type);

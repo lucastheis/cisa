@@ -2,6 +2,7 @@
 #include "utils.h"
 #include <algorithm>
 #include <vector>
+#include <iostream>
 
 using namespace std;
 
@@ -77,14 +78,14 @@ double logDetPD(const MatrixXd& matrix) {
 
 
 MatrixXd deleteRows(const MatrixXd& matrix, vector<int> indices) {
-	MatrixXd result(matrix.rows() - indices.size(), matrix.cols());
+	MatrixXd result = ArrayXXd::Zero(matrix.rows() - indices.size(), matrix.cols()) - 8.;
 
 	sort(indices.begin(), indices.end());
 
 	int idx = 0;
 
 	for(int i = 0; i < matrix.rows(); ++i) {
-		if(indices[idx] == i) {
+		if(idx < indices.size() && indices[idx] == i) {
 			++idx;
 			continue;
 		}
@@ -97,14 +98,14 @@ MatrixXd deleteRows(const MatrixXd& matrix, vector<int> indices) {
 
 
 MatrixXd deleteCols(const MatrixXd& matrix, vector<int> indices) {
-	MatrixXd result(matrix.rows(), matrix.cols() - indices.size());
+	MatrixXd result = ArrayXXd::Zero(matrix.rows(), matrix.cols() - indices.size()) - 9.;
 
 	sort(indices.begin(), indices.end());
 
 	int idx = 0;
 
 	for(int i = 0; i < matrix.cols(); ++i) {
-		if(indices[idx] == i) {
+		if(idx < indices.size() && indices[idx] == i) {
 			++idx;
 			continue;
 		}

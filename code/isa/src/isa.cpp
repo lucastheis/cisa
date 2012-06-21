@@ -345,7 +345,7 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 			cout << setw(5) << i;
 			if(complete())
 				cout << setw(14) << fixed << setprecision(7) << evaluate(data);
-			if(params.adaptive)
+			if(params.adaptive && (params.trainingMethod[0] == 's' || params.trainingMethod[0] == 'S'))
 				cout << setw(14) << fixed << setprecision(7) << params.sgd.stepWidth;
 			cout << endl;
 		}
@@ -537,6 +537,7 @@ MatrixXd ISA::mergeSubspaces(MatrixXd states, const Parameters& params) {
 
 		// compute subspace energies
 		MatrixXd energies(numSubspaces(), states.cols());
+
 		#pragma omp parallel for
 		for(int i = 0; i < numSubspaces(); ++i)
 			energies.row(i) = states.middleRows(from[i], mSubspaces[i].dim()).colwise().norm();
@@ -553,6 +554,10 @@ MatrixXd ISA::mergeSubspaces(MatrixXd states, const Parameters& params) {
 			if(corr(row, col) <= 0.)
 				break;
 
+			if(row == col)
+				throw Exception("Something went wrong.");
+
+			// makes sure subspaces aren't selected again
 			corr(row, col) = 0.;
 
 			// data corresponding to subspaces
@@ -586,10 +591,12 @@ MatrixXd ISA::mergeSubspaces(MatrixXd states, const Parameters& params) {
 				MatrixXd basisRow = mBasis.middleCols(from[row], mSubspaces[row].dim());
 				MatrixXd basisCol = mBasis.middleCols(from[col], mSubspaces[col].dim());
 
-				mBasis << deleteCols(mBasis, indices), basisRow, basisCol;
+				MatrixXd basisDel = deleteCols(mBasis, indices);
+				mBasis << basisDel, basisRow, basisCol;
 
 				// rearrange hidden states
-				states << deleteRows(states, indices), statesJnt;
+				MatrixXd statesDel = deleteRows(states, indices);
+				states << statesDel, statesJnt;
 
 				// remove subspaces from correlation matrix
 				vector<int> rc;
@@ -598,11 +605,11 @@ MatrixXd ISA::mergeSubspaces(MatrixXd states, const Parameters& params) {
 				corr = deleteRows(corr, rc);
 				corr = deleteCols(corr, rc);
 
-				// update indices in from array
-				for(int k = row + 1; k < numSubspaces(); ++k)
-					from[k] -= mSubspaces[k].dim();
-				for(int k = col + 1; k < numSubspaces(); ++k)
-					from[k] -= mSubspaces[k].dim();
+				// update subspace indices
+				for(unsigned int k = row + 1; k < from.size(); ++k)
+					from[k] -= mSubspaces[row].dim();
+				for(unsigned int k = col + 1; k < from.size(); ++k)
+					from[k] -= mSubspaces[col].dim();
 
 				if(row < col) {
 					from.erase(from.begin() + col);
@@ -619,8 +626,8 @@ MatrixXd ISA::mergeSubspaces(MatrixXd states, const Parameters& params) {
 				if(params.merge.verbosity > 0)
 					cout << "Merged subspaces." << endl;
 
-				if(!corr.size())
-					// there's only one big subspace left
+				if(corr.rows() < 2)
+					// no subspaces left to merge
 					break;
 			}
 		}
