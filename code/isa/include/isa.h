@@ -31,6 +31,7 @@ class ISA : public Distribution {
 				bool adaptive;
 				bool trainPrior;
 				bool trainBasis;
+				bool learnGaussianity;
 				bool mergeSubspaces;
 				bool persistent;
 				bool orthogonalize;
@@ -106,6 +107,9 @@ class ISA : public Distribution {
 		inline MatrixXd hiddenStates();
 		inline void setHiddenStates(const MatrixXd& hiddenStates);
 
+		inline double gaussianity();
+		inline void setGaussianity(double gaussianity);
+
 		virtual MatrixXd nullspaceBasis();
 
 		virtual void initialize();
@@ -152,7 +156,12 @@ class ISA : public Distribution {
 
 		virtual Array<double, 1, Dynamic> logLikelihood(const MatrixXd& data);
 		virtual Array<double, 1, Dynamic> logLikelihood(const MatrixXd& data, const Parameters& params);
+		virtual Array<double, 1, Dynamic> logLikelihoodISA(const MatrixXd& data, const Parameters& params);
 		virtual double evaluate(const MatrixXd& data, const Parameters& params = Parameters());
+
+		virtual Array<double, 1, Dynamic> posteriorWeights(
+			const MatrixXd& data,
+			const Parameters& params = Parameters());
 
 	protected:
 		int mNumVisibles;
@@ -160,6 +169,7 @@ class ISA : public Distribution {
 		MatrixXd mBasis;
 		vector<GSM> mSubspaces;
 		MatrixXd mHiddenStates;
+		double mGaussianity;
 };
 
 
@@ -235,6 +245,21 @@ inline MatrixXd ISA::hiddenStates() {
 
 inline void ISA::setHiddenStates(const MatrixXd& hiddenStates) {
 	mHiddenStates = hiddenStates;
+}
+
+
+
+inline double ISA::gaussianity() {
+	return mGaussianity;
+}
+
+
+
+inline void ISA::setGaussianity(double gaussianity) {
+	if(gaussianity < 0. || gaussianity > 1.)
+		throw Exception("Prior weight has to be between 0 and 1."); 
+
+	mGaussianity = gaussianity;
 }
 
 #endif

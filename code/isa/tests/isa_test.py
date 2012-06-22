@@ -474,5 +474,16 @@ class Tests(unittest.TestCase):
 
 
 
+	def test_posterior_weights(self):
+		isa = ISA(4)
+
+		samples = isa.sample(100)
+		weights = self.posterior_weights(samples)
+
+		self.assertTrue(weights.shape[0], 1)
+		self.assertTrue(weights.shape[1], )
+
+
+
 if __name__ == '__main__':
 	unittest.main()

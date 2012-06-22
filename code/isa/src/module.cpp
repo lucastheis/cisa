@@ -14,6 +14,7 @@ static PyGetSetDef ISA_getset[] = {
 	{"num_visibles", (getter)ISA_num_visibles, 0, 0},
 	{"num_hiddens", (getter)ISA_num_hiddens, 0, 0},
 	{"A", (getter)ISA_A, (setter)ISA_set_A, 0},
+	{"gaussianity", (getter)ISA_gaussianity, (setter)ISA_set_gaussianity, 0},
 	{0}
 };
 
@@ -42,6 +43,7 @@ static PyMethodDef ISA_methods[] = {
 	{"prior_energy", (PyCFunction)ISA_prior_energy, METH_VARARGS|METH_KEYWORDS, 0},
 	{"prior_energy_gradient", (PyCFunction)ISA_prior_energy_gradient, METH_VARARGS|METH_KEYWORDS, 0},
 	{"loglikelihood", (PyCFunction)ISA_loglikelihood, METH_VARARGS|METH_KEYWORDS, 0},
+	{"posterior_weights", (PyCFunction)ISA_posterior_weights, METH_VARARGS|METH_KEYWORDS, 0},
 	{"evaluate", (PyCFunction)ISA_evaluate, METH_VARARGS|METH_KEYWORDS, 0},
 	{"__reduce__", (PyCFunction)ISA_reduce, METH_NOARGS, 0},
 	{"__setstate__", (PyCFunction)ISA_setstate, METH_VARARGS, 0},

@@ -82,7 +82,7 @@ MatrixXd deleteRows(const MatrixXd& matrix, vector<int> indices) {
 
 	sort(indices.begin(), indices.end());
 
-	int idx = 0;
+	unsigned int idx = 0;
 
 	for(int i = 0; i < matrix.rows(); ++i) {
 		if(idx < indices.size() && indices[idx] == i) {
@@ -102,7 +102,7 @@ MatrixXd deleteCols(const MatrixXd& matrix, vector<int> indices) {
 
 	sort(indices.begin(), indices.end());
 
-	int idx = 0;
+	unsigned int idx = 0;
 
 	for(int i = 0; i < matrix.cols(); ++i) {
 		if(idx < indices.size() && indices[idx] == i) {

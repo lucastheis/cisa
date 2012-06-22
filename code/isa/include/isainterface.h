@@ -28,6 +28,9 @@ PyObject* ISA_num_hiddens(ISAObject*, PyObject*, void*);
 PyObject* ISA_A(ISAObject*, PyObject*, void*);
 int ISA_set_A(ISAObject*, PyObject* value, void*);
 
+PyObject* ISA_gaussianity(ISAObject*, PyObject*, void*);
+int ISA_set_gaussianity(ISAObject*, PyObject* value, void*);
+
 PyObject* ISA_basis(ISAObject*, PyObject*, PyObject*);
 PyObject* ISA_set_basis(ISAObject*, PyObject*, PyObject*);
 PyObject* ISA_nullspace_basis(ISAObject*, PyObject*, PyObject*);
@@ -58,6 +61,8 @@ PyObject* ISA_prior_energy(ISAObject*, PyObject*, PyObject*);
 PyObject* ISA_prior_energy_gradient(ISAObject*, PyObject*, PyObject*);
 PyObject* ISA_loglikelihood(ISAObject*, PyObject*, PyObject*);
 PyObject* ISA_evaluate(ISAObject*, PyObject*, PyObject*);
+
+PyObject* ISA_posterior_weights(ISAObject*, PyObject*, PyObject*);
 
 PyObject* ISA_reduce(ISAObject*, PyObject*, PyObject*);
 PyObject* ISA_setstate(ISAObject*, PyObject*, PyObject*);
