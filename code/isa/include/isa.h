@@ -257,7 +257,7 @@ inline double ISA::gaussianity() {
 
 inline void ISA::setGaussianity(double gaussianity) {
 	if(gaussianity < 0. || gaussianity > 1.)
-		throw Exception("Prior weight has to be between 0 and 1."); 
+		throw Exception("Gaussianity has to be between 0 and 1."); 
 
 	mGaussianity = gaussianity;
 }

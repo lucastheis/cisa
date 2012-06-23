@@ -56,7 +56,7 @@ ISA::Parameters::Parameters() {
 	trainBasis = true;
 	learnGaussianity = false;
 	mergeSubspaces = false;
-	orthogonalize = true;
+	orthogonalize = false;
 	callback = 0;
 	persistent = true;
 
@@ -939,8 +939,18 @@ Array<double, 1, Dynamic> ISA::logLikelihood(const MatrixXd& data, const Paramet
 	Array<double, 1, Dynamic> logLik = logLikelihoodISA(data, params);
 
 	if(mGaussianity > 0.) {
-		Array<double, 1, Dynamic> logLikGauss = -data.colwise().squaredNorm().array() / 2. - data.rows() / 2. * log(2. * PI);
-		return (1. - mGaussianity) * logLik + mGaussianity * logLikGauss;
+		Array<double, 1, Dynamic> logLikGauss =
+			-data.colwise().squaredNorm().array() / 2. - data.rows() / 2. * log(2. * PI);
+
+		Array<double, 2, Dynamic> logLikMix(2, data.cols());
+		logLikMix << logLik, logLikGauss;
+
+		Array<double, 1, Dynamic> logLikMax = logLikMix.colwise().maxCoeff() - 1.;
+
+		// TODO: make faster?
+		// numerically stable weighted log-sum-exp
+		return ((1. - mGaussianity) * (logLik - logLikMax).exp()
+			+ mGaussianity * (logLikGauss - logLikMax).exp()).log() + logLikMax;
 	}
 
 	return logLik;

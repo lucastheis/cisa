@@ -7,15 +7,15 @@
 using namespace std;
 
 Array<double, 1, Dynamic> logsumexp(const ArrayXXd& array) {
-	Array<double, 1, Dynamic> array_max = array.colwise().maxCoeff();
-	return array_max + (array.rowwise() - array_max).exp().colwise().sum().log();
+	Array<double, 1, Dynamic> arrayMax = array.colwise().maxCoeff() - 1.;
+	return arrayMax + (array.rowwise() - arrayMax).exp().colwise().sum().log();
 }
 
 
 
 Array<double, 1, Dynamic> logmeanexp(const ArrayXXd& array) {
-	Array<double, 1, Dynamic> array_max = array.colwise().maxCoeff() - 1.;
-	return array_max + (array.rowwise() - array_max).exp().colwise().mean().log();
+	Array<double, 1, Dynamic> arrayMax = array.colwise().maxCoeff() - 1.;
+	return arrayMax + (array.rowwise() - arrayMax).exp().colwise().mean().log();
 }
 
 

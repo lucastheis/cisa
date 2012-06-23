@@ -449,7 +449,7 @@ int ISA_set_gaussianity(ISAObject* self, PyObject* value, void*) {
 	} else if(PyInt_Check(value)) {
 		gaussianity = PyInt_AsLong(value);
 	} else {
-		PyErr_SetString(PyExc_TypeError, "Prior weight should be of type `float`.");
+		PyErr_SetString(PyExc_TypeError, "gaussianity should be of type `float`.");
 		return -1;
 	}
 

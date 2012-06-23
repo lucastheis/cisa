@@ -477,11 +477,27 @@ class Tests(unittest.TestCase):
 	def test_posterior_weights(self):
 		isa = ISA(4)
 
-		samples = isa.sample(100)
+		isa.gaussianity = 0.2
+
+		samples = isa.sample(100000)
 		weights = self.posterior_weights(samples)
 
 		self.assertTrue(weights.shape[0], 1)
-		self.assertTrue(weights.shape[1], )
+		self.assertTrue(weights.shape[1], samples.shape[1])
+
+		# average posterior probability should correspond to prior probability
+		self.assertLess(abs(mean(weights) - (1. - isa.gaussianity)), 0.01)
+
+
+
+	def test_gaussianity(self):
+		isa = ISA(5)
+		isa.gaussianity = 1.
+
+		loglik = -mean(isa.loglikelihood(randn(isa.num_visibles, 1000000))) / isa.num_visibles
+		entropy = log(2. * pi * exp(1.)) / 2.
+
+		self.assertLess(abs(loglik - entropy), 0.01)
 
 
 
