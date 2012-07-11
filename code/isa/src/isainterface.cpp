@@ -903,13 +903,14 @@ PyObject* ISA_sample_nullspace(ISAObject* self, PyObject* args, PyObject* kwds) 
 
 
 PyObject* ISA_sample_posterior(ISAObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"data", "parameters", 0};
+	char* kwlist[] = {"data", "parameters", "hidden_states", 0};
 
 	PyObject* data;
 	PyObject* parameters = 0;
+	PyObject* hidden_states = 0;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &data, &parameters))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|OO", kwlist, &data, &parameters, &hidden_states))
 		return 0;
 
 	// make sure data is stored in NumPy array
@@ -918,10 +919,21 @@ PyObject* ISA_sample_posterior(ISAObject* self, PyObject* args, PyObject* kwds) 
 		return 0;
 	}
 
+	if(hidden_states && !PyArray_Check(hidden_states)) {
+		PyErr_SetString(PyExc_TypeError, "Hidden states have to be stored in a NumPy array.");
+		return 0;
+	}
+
 	try {
-		return PyArray_FromMatrixXd(self->isa->samplePosterior(
-			PyArray_ToMatrixXd(data),
-			PyObject_ToParameters(self, parameters)));
+		if(hidden_states)
+			return PyArray_FromMatrixXd(self->isa->samplePosterior(
+				PyArray_ToMatrixXd(data),
+				PyArray_ToMatrixXd(hidden_states),
+				PyObject_ToParameters(self, parameters)));
+		else
+			return PyArray_FromMatrixXd(self->isa->samplePosterior(
+				PyArray_ToMatrixXd(data),
+				PyObject_ToParameters(self, parameters)));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
@@ -1103,6 +1115,33 @@ PyObject* ISA_prior_energy_gradient(ISAObject* self, PyObject* args, PyObject* k
 
 	try {
 		return PyArray_FromMatrixXd(self->isa->priorEnergyGradient(PyArray_ToMatrixXd(states)));
+	} catch(Exception exception) {
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return 0;
+	}
+
+	return 0;
+}
+
+
+
+PyObject* ISA_prior_loglikelihood(ISAObject* self, PyObject* args, PyObject* kwds) {
+	char* kwlist[] = {"states", 0};
+
+	PyObject* states;
+
+	// read arguments
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &states))
+		return 0;
+
+	// make sure data is stored in NumPy array
+	if(!PyArray_Check(states)) {
+		PyErr_SetString(PyExc_TypeError, "Hidden states have to be stored in a NumPy array.");
+		return 0;
+	}
+
+	try {
+		return PyArray_FromMatrixXd(self->isa->priorLogLikelihood(PyArray_ToMatrixXd(states)));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;

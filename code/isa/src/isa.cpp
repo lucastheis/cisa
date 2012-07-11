@@ -288,9 +288,9 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 		cout << setw(5) << "Epoch";
 		if(complete())
 			cout << setw(14) << "Value";
-		if(params.adaptive)
+		if(params.adaptive && (params.trainingMethod[0] == 's' || params.trainingMethod[0] == 'S'))
 			cout << setw(14) << "Step width";
-		if(mGaussianity > 0. && params.learnGaussianity)
+		if(params.learnGaussianity)
 			cout << setw(14) << "Gaussianity";
 		cout << endl;
 	}
@@ -341,7 +341,7 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 				trainPrior(hiddenStatesISA, params);
 
 			if(params.mergeSubspaces)
-				mergeSubspaces(hiddenStatesISA, params);
+				cout << "Warning: GISA cannot be used with mergeSubspaces at this point." << endl;
 
 			if(params.trainBasis) {
 				// optimize basis
@@ -372,7 +372,7 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 				trainPrior(mHiddenStates, params);
 
 			if(params.mergeSubspaces)
-				mergeSubspaces(mHiddenStates, params);
+				mHiddenStates = mergeSubspaces(mHiddenStates, params);
 
 			if(params.trainBasis) {
 				// optimize basis
@@ -406,7 +406,7 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 				cout << setw(14) << fixed << setprecision(7) << evaluate(data);
 			if(params.adaptive && (params.trainingMethod[0] == 's' || params.trainingMethod[0] == 'S'))
 				cout << setw(14) << fixed << setprecision(7) << params.sgd.stepWidth;
-			if(mGaussianity > 0. && params.learnGaussianity)
+			if(params.learnGaussianity)
 				cout << setw(14) << fixed << setprecision(4) << mGaussianity;
 			cout << endl;
 		}
@@ -786,16 +786,16 @@ MatrixXd ISA::samplePosterior(const MatrixXd& data, const MatrixXd& states, cons
 		// sample scales
 		S = sampleScales(Y);
 		v = S.array().square();
-		
+
 		// sample source variables
 		Y = sampleNormal(numHiddens(), data.cols()) * S.array();
 		X = data - A * Y;
 
 		#pragma omp parallel for
- 		for(int j = 0; j < data.cols(); ++j) {
- 			MatrixXd vAt = v.col(j).asDiagonal() * At;
-  			Y.col(j) = WX.col(j) + Q * (Y.col(j) + vAt * (A * vAt).llt().solve(X.col(j)));
- 		}
+		for(int j = 0; j < data.cols(); ++j) {
+			MatrixXd vAt = v.col(j).asDiagonal() * At;
+			Y.col(j) = WX.col(j) + Q * (Y.col(j) + vAt * (A * vAt).llt().solve(X.col(j)));
+		}
 
 		if(params.gibbs.verbosity > 0)
 			cout << setw(10) << i << setw(12) << fixed << setprecision(4) << priorEnergy(Y).mean() << endl;

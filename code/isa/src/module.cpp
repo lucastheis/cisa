@@ -42,6 +42,7 @@ static PyMethodDef ISA_methods[] = {
 	{"matching_pursuit", (PyCFunction)ISA_matching_pursuit, METH_VARARGS|METH_KEYWORDS, 0},
 	{"prior_energy", (PyCFunction)ISA_prior_energy, METH_VARARGS|METH_KEYWORDS, 0},
 	{"prior_energy_gradient", (PyCFunction)ISA_prior_energy_gradient, METH_VARARGS|METH_KEYWORDS, 0},
+	{"prior_loglikelihood", (PyCFunction)ISA_prior_loglikelihood, METH_VARARGS|METH_KEYWORDS, 0},
 	{"loglikelihood", (PyCFunction)ISA_loglikelihood, METH_VARARGS|METH_KEYWORDS, 0},
 	{"posterior_weights", (PyCFunction)ISA_posterior_weights, METH_VARARGS|METH_KEYWORDS, 0},
 	{"evaluate", (PyCFunction)ISA_evaluate, METH_VARARGS|METH_KEYWORDS, 0},
