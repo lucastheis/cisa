@@ -856,7 +856,7 @@ pair<MatrixXd, MatrixXd> ISA::samplePosteriorAIS(const MatrixXd& data, const Par
 		#pragma omp parallel for
 		for(int j = 0; j < data.cols(); ++j) {
 			MatrixXd vAt = v.col(j).asDiagonal() * At;
-			Y.col(j) = WX.col(j) + Q * (Y.col(j) + vAt * (A * vAt).colPivHouseholderQr().solve(X.col(j))); // TODO: llt()
+			Y.col(j) = WX.col(j) + Q * (Y.col(j) + vAt * (A * vAt).llt().solve(X.col(j)));
 		}
 
 		logWeights += isa.priorEnergy(Y);

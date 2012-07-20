@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <vector>
 #include <iostream>
+#include <random>
+#include <cstdlib>
 
 using namespace std;
 
@@ -21,10 +23,14 @@ Array<double, 1, Dynamic> logmeanexp(const ArrayXXd& array) {
 
 
 ArrayXXd sampleNormal(int m, int n) {
-	ArrayXXd U1 = ArrayXXd::Random(m, n) / 2. + 0.5;
-	ArrayXXd U2 = ArrayXXd::Random(m, n) / 2. + 0.5;
-	// Box-Muller transform
-	return (-2. * U1.log()).sqrt() * (2. * PI * U2).cos();
+	mt19937 gen(rand());
+	normal_distribution<double> normal;
+	ArrayXXd samples(m, n);
+
+	for(int i = 0; i < samples.size(); ++i)
+		samples(i) = normal(gen);
+
+	return samples;
 }
 
 

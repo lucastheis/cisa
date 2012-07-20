@@ -7,7 +7,7 @@ sys.path.append('./build/lib.linux-x86_64-2.7')
 
 from isa import ISA
 from numpy import sqrt, sum, square, dot, var, eye, cov, diag, std, max, asarray, mean
-from numpy import ones, cos, sin, all, sort
+from numpy import ones, cos, sin, all, sort, log, pi, exp
 from numpy.linalg import inv, eig
 from numpy.random import randn, permutation
 from scipy.optimize import check_grad
@@ -480,7 +480,7 @@ class Tests(unittest.TestCase):
 		isa.gaussianity = 0.2
 
 		samples = isa.sample(100000)
-		weights = self.posterior_weights(samples)
+		weights = isa.posterior_weights(samples)
 
 		self.assertTrue(weights.shape[0], 1)
 		self.assertTrue(weights.shape[1], samples.shape[1])

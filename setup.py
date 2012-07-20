@@ -27,6 +27,7 @@ modules = [
 		extra_link_args=[
 			'code/liblbfgs/lib/.libs/liblbfgs.a'],
 		extra_compile_args=[
+			'-std=c++0x',
 			'-fopenmp',
 			'-Wno-parentheses',
 			'-Wno-write-strings'])]
