@@ -56,7 +56,12 @@ PyObject* GSM_num_scales(GSMObject* self, PyObject*, void*) {
 
 
 PyObject* GSM_scales(GSMObject* self, PyObject*, void*) {
-	return PyArray_FromMatrixXd(self->gsm->scales());
+	PyObject* array = PyArray_FromMatrixXd(self->gsm->scales());
+
+	// make array immutable
+	reinterpret_cast<PyArrayObject*>(array)->flags &= ~NPY_WRITEABLE;
+
+	return array;
 }
 
 

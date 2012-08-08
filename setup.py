@@ -3,11 +3,7 @@
 import os
 import sys
 import numpy
-
-sys.path.append('./code')
-
 from distutils.core import setup, Extension
-from isa import __version__
 
 modules = [
 	Extension('isa',
@@ -39,7 +35,7 @@ modules = [
 
 setup(
 	name='isa',
-	version=__version__,
+	version='0.2.1',
 	author='Lucas Theis',
 	author_email='lucas@theis.io',
 	description='A C++ implementation of overcomplete ISA.',

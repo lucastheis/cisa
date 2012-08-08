@@ -411,7 +411,12 @@ PyObject* ISA_num_hiddens(ISAObject* self, PyObject*, void*) {
 
 
 PyObject* ISA_A(ISAObject* self, PyObject*, void*) {
-	return PyArray_FromMatrixXd(self->isa->basis());
+	PyObject* array = PyArray_FromMatrixXd(self->isa->basis());
+
+	// make array immutable
+	reinterpret_cast<PyArrayObject*>(array)->flags &= ~NPY_WRITEABLE;
+
+	return array;
 }
 
 

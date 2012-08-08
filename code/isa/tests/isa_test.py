@@ -7,7 +7,7 @@ sys.path.append('./build/lib.linux-x86_64-2.7')
 
 from isa import ISA
 from numpy import sqrt, sum, square, dot, var, eye, cov, diag, std, max, asarray, mean
-from numpy import ones, cos, sin, all, sort, log, pi, exp
+from numpy import ones, cos, sin, all, sort, log, pi, exp, copy
 from numpy.linalg import inv, eig
 from numpy.random import randn, permutation
 from scipy.optimize import check_grad
@@ -383,7 +383,7 @@ class Tests(unittest.TestCase):
 
 		# equivalent overcomplete model
 		isa2 = ISA(2, 4)
-		A = isa2.A
+		A = copy(isa2.A)
 		A[:, :2] = isa1.A / sqrt(2.)
 		A[:, 2:] = isa1.A / sqrt(2.)
 		isa2.A = A
