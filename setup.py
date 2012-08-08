@@ -1,7 +1,13 @@
+#!/usr/bin/env python
+
 import os
 import sys
 import numpy
+
+sys.path.append('./code')
+
 from distutils.core import setup, Extension
+from isa import __version__
 
 modules = [
 	Extension('isa',
@@ -33,6 +39,10 @@ modules = [
 
 setup(
 	name='isa',
-	version='0.1',
-	description='',
+	version=__version__,
+	author='Lucas Theis',
+	author_email='lucas@theis.io',
+	description='A C++ implementation of overcomplete ISA.',
+	url='http://github.com/lucastheis/cisa',
+	license='MIT',
 	ext_modules=modules)
