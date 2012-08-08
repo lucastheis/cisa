@@ -16,12 +16,12 @@ PyObject* GSM_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
 
 
 int GSM_init(GSMObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"dim", "num_scales", 0};
+	const char* kwlist[] = {"dim", "num_scales", 0};
 	int dim;
 	int num_scales = 10;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "i|i", kwlist,
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "i|i", const_cast<char**>(kwlist),
 		&dim, &num_scales))
 		return -1;
 
@@ -106,14 +106,14 @@ PyObject* GSM_normalize(GSMObject* self, PyObject*, PyObject*) {
 
 
 PyObject* GSM_train(GSMObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"data", "max_iter", "tol", 0};
+	const char* kwlist[] = {"data", "max_iter", "tol", 0};
 
 	PyObject* data;
 	int max_iter = 100;
 	double tol = 1e-5;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|id", kwlist, &data, &max_iter, &tol))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|id", const_cast<char**>(kwlist), &data, &max_iter, &tol))
 		return 0;
 
 	// make sure data is stored in NumPy array
@@ -141,12 +141,12 @@ PyObject* GSM_train(GSMObject* self, PyObject* args, PyObject* kwds) {
 
 
 PyObject* GSM_posterior(GSMObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"data", 0};
+	const char* kwlist[] = {"data", 0};
 
 	PyObject* data;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &data))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", const_cast<char**>(kwlist), &data))
 		return 0;
 
 	// make sure data is stored in NumPy array
@@ -166,11 +166,11 @@ PyObject* GSM_posterior(GSMObject* self, PyObject* args, PyObject* kwds) {
 
 
 PyObject* GSM_sample(GSMObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"num_samples", 0};
+	const char* kwlist[] = {"num_samples", 0};
 
 	int num_samples = 1;
 
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &num_samples))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "|i", const_cast<char**>(kwlist), &num_samples))
 		return 0;
 
 	try {
@@ -184,12 +184,12 @@ PyObject* GSM_sample(GSMObject* self, PyObject* args, PyObject* kwds) {
 
 
 PyObject* GSM_sample_posterior(GSMObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"data", 0};
+	const char* kwlist[] = {"data", 0};
 
 	PyObject* data;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &data))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", const_cast<char**>(kwlist), &data))
 		return 0;
 
 	// make sure data is stored in NumPy array
@@ -209,12 +209,12 @@ PyObject* GSM_sample_posterior(GSMObject* self, PyObject* args, PyObject* kwds) 
 
 
 PyObject* GSM_loglikelihood(GSMObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"data", 0};
+	const char* kwlist[] = {"data", 0};
 
 	PyObject* data;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &data))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", const_cast<char**>(kwlist), &data))
 		return 0;
 
 	// make sure data is stored in NumPy array
@@ -234,12 +234,12 @@ PyObject* GSM_loglikelihood(GSMObject* self, PyObject* args, PyObject* kwds) {
 
 
 PyObject* GSM_energy(GSMObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"data", 0};
+	const char* kwlist[] = {"data", 0};
 
 	PyObject* data;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &data))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", const_cast<char**>(kwlist), &data))
 		return 0;
 
 	// make sure data is stored in NumPy array
@@ -259,12 +259,12 @@ PyObject* GSM_energy(GSMObject* self, PyObject* args, PyObject* kwds) {
 
 
 PyObject* GSM_energy_gradient(GSMObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"data", 0};
+	const char* kwlist[] = {"data", 0};
 
 	PyObject* data;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &data))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", const_cast<char**>(kwlist), &data))
 		return 0;
 
 	// make sure data is stored in NumPy array

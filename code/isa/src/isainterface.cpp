@@ -363,14 +363,14 @@ PyObject* ISA_new(PyTypeObject* type, PyObject*, PyObject*) {
 
 
 int ISA_init(ISAObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"num_visibles", "num_hiddens", "ssize", "num_scales", 0};
+	const char* kwlist[] = {"num_visibles", "num_hiddens", "ssize", "num_scales", 0};
 	int num_visibles;
 	int num_hiddens = -1;
 	int ssize = 1;
 	int num_scales = 10;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "i|iii", kwlist,
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "i|iii", const_cast<char**>(kwlist),
 		&num_visibles, &num_hiddens, &ssize, &num_scales))
 		return -1;
 
@@ -480,12 +480,12 @@ PyObject* ISA_basis(ISAObject* self, PyObject*, PyObject*) {
 
 
 PyObject* ISA_set_basis(ISAObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"basis", 0};
+	const char* kwlist[] = {"basis", 0};
 
 	PyObject* basis = 0;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &basis))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", const_cast<char**>(kwlist), &basis))
 		return 0;
 
 	if(!PyArray_Check(basis)) {
@@ -536,12 +536,12 @@ PyObject* ISA_hidden_states(ISAObject* self, PyObject*, PyObject*) {
 
 
 PyObject* ISA_set_hidden_states(ISAObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"states", 0};
+	const char* kwlist[] = {"states", 0};
 
 	PyObject* states = 0;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &states))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", const_cast<char**>(kwlist), &states))
 		return 0;
 
 	if(!PyArray_Check(states)) {
@@ -582,12 +582,12 @@ PyObject* ISA_subspaces(ISAObject* self, PyObject*, PyObject*) {
 
 
 PyObject* ISA_set_subspaces(ISAObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"subspaces", 0};
+	const char* kwlist[] = {"subspaces", 0};
 
 	PyObject* list = 0;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &list))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", const_cast<char**>(kwlist), &list))
 		return 0;
 
 	if(!PyList_Check(list)) {
@@ -757,12 +757,12 @@ PyObject* ISA_default_parameters(ISAObject* self) {
 
 
 PyObject* ISA_initialize(ISAObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"data", 0};
+	const char* kwlist[] = {"data", 0};
 
 	PyObject* data = 0;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "|O", kwlist, &data))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "|O", const_cast<char**>(kwlist), &data))
 		return 0;
 
 	// make sure data is stored in NumPy array
@@ -801,13 +801,13 @@ PyObject* ISA_orthogonalize(ISAObject* self, PyObject* args, PyObject* kwds) {
 
 
 PyObject* ISA_train(ISAObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"data", "parameters", 0};
+	const char* kwlist[] = {"data", "parameters", 0};
 
 	PyObject* data;
 	PyObject* parameters = 0;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &data, &parameters))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", const_cast<char**>(kwlist), &data, &parameters))
 		return 0;
 
 	// make sure data is stored in NumPy array
@@ -833,11 +833,11 @@ PyObject* ISA_train(ISAObject* self, PyObject* args, PyObject* kwds) {
 
 
 PyObject* ISA_sample(ISAObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"num_samples", 0};
+	const char* kwlist[] = {"num_samples", 0};
 
 	int num_samples = 1;
 
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &num_samples))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "|i", const_cast<char**>(kwlist), &num_samples))
 		return 0;
 
 	try {
@@ -853,11 +853,11 @@ PyObject* ISA_sample(ISAObject* self, PyObject* args, PyObject* kwds) {
 
 
 PyObject* ISA_sample_prior(ISAObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"num_samples", 0};
+	const char* kwlist[] = {"num_samples", 0};
 
 	int num_samples = 1;
 
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &num_samples))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "|i", const_cast<char**>(kwlist), &num_samples))
 		return 0;
 
 	try {
@@ -873,13 +873,13 @@ PyObject* ISA_sample_prior(ISAObject* self, PyObject* args, PyObject* kwds) {
 
 
 PyObject* ISA_sample_nullspace(ISAObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"data", "parameters", 0};
+	const char* kwlist[] = {"data", "parameters", 0};
 
 	PyObject* data;
 	PyObject* parameters = 0;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &data, &parameters))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", const_cast<char**>(kwlist), &data, &parameters))
 		return 0;
 
 	// make sure data is stored in NumPy array
@@ -903,14 +903,14 @@ PyObject* ISA_sample_nullspace(ISAObject* self, PyObject* args, PyObject* kwds) 
 
 
 PyObject* ISA_sample_posterior(ISAObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"data", "parameters", "hidden_states", 0};
+	const char* kwlist[] = {"data", "parameters", "hidden_states", 0};
 
 	PyObject* data;
 	PyObject* parameters = 0;
 	PyObject* hidden_states = 0;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|OO", kwlist, &data, &parameters, &hidden_states))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|OO", const_cast<char**>(kwlist), &data, &parameters, &hidden_states))
 		return 0;
 
 	// make sure data is stored in NumPy array
@@ -945,13 +945,13 @@ PyObject* ISA_sample_posterior(ISAObject* self, PyObject* args, PyObject* kwds) 
 
 
 PyObject* ISA_sample_posterior_ais(ISAObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"data", "parameters", 0};
+	const char* kwlist[] = {"data", "parameters", 0};
 
 	PyObject* data;
 	PyObject* parameters = 0;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &data, &parameters))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", const_cast<char**>(kwlist), &data, &parameters))
 		return 0;
 
 	// make sure data is stored in NumPy array
@@ -985,13 +985,13 @@ PyObject* ISA_sample_posterior_ais(ISAObject* self, PyObject* args, PyObject* kw
 
 
 PyObject* ISA_sample_ais(ISAObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"data", "parameters", 0};
+	const char* kwlist[] = {"data", "parameters", 0};
 
 	PyObject* data;
 	PyObject* parameters = 0;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &data, &parameters))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", const_cast<char**>(kwlist), &data, &parameters))
 		return 0;
 
 	// make sure data is stored in NumPy array
@@ -1015,12 +1015,12 @@ PyObject* ISA_sample_ais(ISAObject* self, PyObject* args, PyObject* kwds) {
 
 
 PyObject* ISA_sample_scales(ISAObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"states", 0};
+	const char* kwlist[] = {"states", 0};
 
 	PyObject* states;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &states))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", const_cast<char**>(kwlist), &states))
 		return 0;
 
 	// make sure data is stored in NumPy array
@@ -1042,13 +1042,13 @@ PyObject* ISA_sample_scales(ISAObject* self, PyObject* args, PyObject* kwds) {
 
 
 PyObject* ISA_matching_pursuit(ISAObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"data", "parameters", 0};
+	const char* kwlist[] = {"data", "parameters", 0};
 
 	PyObject* data;
 	PyObject* parameters = 0;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &data, &parameters))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", const_cast<char**>(kwlist), &data, &parameters))
 		return 0;
 
 	// make sure data is stored in NumPy array
@@ -1072,12 +1072,12 @@ PyObject* ISA_matching_pursuit(ISAObject* self, PyObject* args, PyObject* kwds) 
 
 
 PyObject* ISA_prior_energy(ISAObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"states", 0};
+	const char* kwlist[] = {"states", 0};
 
 	PyObject* states;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &states))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", const_cast<char**>(kwlist), &states))
 		return 0;
 
 	// make sure data is stored in NumPy array
@@ -1099,12 +1099,12 @@ PyObject* ISA_prior_energy(ISAObject* self, PyObject* args, PyObject* kwds) {
 
 
 PyObject* ISA_prior_energy_gradient(ISAObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"states", 0};
+	const char* kwlist[] = {"states", 0};
 
 	PyObject* states;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &states))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", const_cast<char**>(kwlist), &states))
 		return 0;
 
 	// make sure data is stored in NumPy array
@@ -1126,12 +1126,12 @@ PyObject* ISA_prior_energy_gradient(ISAObject* self, PyObject* args, PyObject* k
 
 
 PyObject* ISA_prior_loglikelihood(ISAObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"states", 0};
+	const char* kwlist[] = {"states", 0};
 
 	PyObject* states;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &states))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", const_cast<char**>(kwlist), &states))
 		return 0;
 
 	// make sure data is stored in NumPy array
@@ -1153,14 +1153,14 @@ PyObject* ISA_prior_loglikelihood(ISAObject* self, PyObject* args, PyObject* kwd
 
 
 PyObject* ISA_loglikelihood(ISAObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"data", "parameters", "return_all", 0};
+	const char* kwlist[] = {"data", "parameters", "return_all", 0};
 
 	PyObject* data;
 	PyObject* parameters = 0;
 	int return_all = 0;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|Oi", kwlist, &data, &parameters, &return_all))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|Oi", const_cast<char**>(kwlist), &data, &parameters, &return_all))
 		return 0;
 
 	// make sure data is stored in NumPy array
@@ -1190,13 +1190,13 @@ PyObject* ISA_loglikelihood(ISAObject* self, PyObject* args, PyObject* kwds) {
 
 
 PyObject* ISA_evaluate(ISAObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"data", "parameters", 0};
+	const char* kwlist[] = {"data", "parameters", 0};
 
 	PyObject* data;
 	PyObject* parameters = 0;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &data, &parameters))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", const_cast<char**>(kwlist), &data, &parameters))
 		return 0;
 
 	// make sure data is stored in NumPy array
@@ -1220,13 +1220,13 @@ PyObject* ISA_evaluate(ISAObject* self, PyObject* args, PyObject* kwds) {
 
 
 PyObject* ISA_posterior_weights(ISAObject* self, PyObject* args, PyObject* kwds) {
-	char* kwlist[] = {"data", "parameters"};
+	const char* kwlist[] = {"data", "parameters"};
 
 	PyObject* data;
 	PyObject* parameters = 0;
 
 	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &data, &parameters))
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", const_cast<char**>(kwlist), &data, &parameters))
 		return 0;
 
 	// make sure data is stored in NumPy array
