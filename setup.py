@@ -1,7 +1,7 @@
 import os
+import sys
 import numpy
 from distutils.core import setup, Extension
-from distutils.ccompiler import new_compiler
 
 modules = [
 	Extension('isa',
@@ -27,10 +27,9 @@ modules = [
 		extra_link_args=[
 			'code/liblbfgs/lib/.libs/liblbfgs.a'],
 		extra_compile_args=[
-			'-std=c++0x',
 			'-fopenmp',
 			'-Wno-parentheses',
-			'-Wno-write-strings'])]
+			'-Wno-write-strings'] + ['-std=c++0x'] if sys.platform != 'darwin' else [])]
 
 setup(
 	name='isa',

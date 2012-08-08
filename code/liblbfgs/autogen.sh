@@ -12,10 +12,17 @@ else
     FORCE_MISSING=
 fi
 
-libtoolize --copy $FORCE 2>&1 | sed '/^You should/d' || {
-    echo "libtoolize failed!"
-    exit 1
-}
+if which glibtoolize 2> /dev/null; then
+	glibtoolize --automake --copy $FORCE 2>&1 | sed '/^You should/d' || {
+		echo "libtoolize failed!"
+		exit 1
+	}
+else
+	libtoolize --automake --copy $FORCE 2>&1 | sed '/^You should/d' || {
+		echo "libtoolize failed!"
+		exit 1
+	}
+fi
 
 aclocal $FORCE || {
     echo "aclocal failed!"
