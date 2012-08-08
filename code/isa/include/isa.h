@@ -48,6 +48,7 @@ class ISA : public Distribution {
 
 				struct {
 					int maxIter;
+					int numGrad;
 				} lbfgs;
 
 				struct {

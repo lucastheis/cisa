@@ -166,6 +166,15 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 					params.lbfgs.maxIter = static_cast<int>(PyFloat_AsDouble(maxIter));
 				else
 					throw Exception("lbfgs.max_iter should be of type `int`.");
+
+			PyObject* numGrad = PyDict_GetItemString(lbfgs, "num_grad");
+			if(numGrad)
+				if(PyInt_Check(numGrad))
+					params.lbfgs.numGrad = PyInt_AsLong(numGrad);
+				else if(PyFloat_Check(numGrad))
+					params.lbfgs.numGrad = static_cast<int>(PyFloat_AsDouble(numGrad));
+				else
+					throw Exception("lbfgs.num_grad should be of type `int`.");
 		}
 
 		PyObject* mp = PyDict_GetItemString(parameters, "MP");
@@ -717,6 +726,7 @@ PyObject* ISA_default_parameters(ISAObject* self) {
 	}
 
 	PyDict_SetItemString(lbfgs, "max_iter", PyInt_FromLong(params.lbfgs.maxIter));
+	PyDict_SetItemString(lbfgs, "num_grad", PyInt_FromLong(params.lbfgs.numGrad));
 
 	PyDict_SetItemString(mp, "max_iter", PyInt_FromLong(params.mp.maxIter));
 	PyDict_SetItemString(mp, "batch_size", PyInt_FromLong(params.mp.batchSize));

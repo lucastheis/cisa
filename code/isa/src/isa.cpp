@@ -68,6 +68,7 @@ ISA::Parameters::Parameters() {
 	sgd.pocket = true;
 
 	lbfgs.maxIter = 50;
+	lbfgs.numGrad = 10;
 
 	mp.maxIter = 100;
 	mp.batchSize = 100;
@@ -510,6 +511,7 @@ bool ISA::trainLBFGS(
 	lbfgs_parameter_t param;
 	lbfgs_parameter_init(&param);
 	param.max_iterations = params.lbfgs.maxIter;
+	param.m = params.lbfgs.numGrad;
 
 	pair<ISA*, const MatrixXd*> instance(this, &complData);
 
