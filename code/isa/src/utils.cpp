@@ -5,7 +5,7 @@
 #include <iostream>
 #include <cstdlib>
 
-#ifdef __GXX_EXPERIMENTAL_CXX0X__ || __cplusplus >= 201103L
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
 #include <random>
 #endif
 
@@ -25,7 +25,7 @@ Array<double, 1, Dynamic> logmeanexp(const ArrayXXd& array) {
 
 
 
-#ifdef __GXX_EXPERIMENTAL_CXX0X__ || __cplusplus >= 201103L
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
 ArrayXXd sampleNormal(int m, int n) {
 	mt19937 gen(rand());
 	normal_distribution<double> normal;
@@ -37,6 +37,7 @@ ArrayXXd sampleNormal(int m, int n) {
 	return samples;
 }
 #else
+#warning "No C++11 support. Using my own implementation of the Box-Muller transform."
 ArrayXXd sampleNormal(int m, int n) {
 	ArrayXXd U1 = ArrayXXd::Random(m, n) / 2. + 0.5;
 	ArrayXXd U2 = ArrayXXd::Random(m, n) / 2. + 0.5;
