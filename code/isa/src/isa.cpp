@@ -567,16 +567,17 @@ void ISA::trainMP(const MatrixXd& data, const Parameters& params) {
 
 
 MatrixXd ISA::matchingPursuit(const MatrixXd& data, const Parameters& params) {
+	MatrixXd normBasis = normalize(mBasis);
 	MatrixXd hiddenStates = MatrixXd::Zero(numHiddens(), data.cols());
-	MatrixXd responses = mBasis.transpose() * data;
-	MatrixXd gramMatrix = mBasis.transpose() * mBasis;
+	MatrixXd responses = normBasis.transpose() * data;
+	MatrixXd gramMatrix = normBasis.transpose() * normBasis;
 
 	for(int i = 0; i < params.mp.numCoeff; ++i) {
 		#pragma omp parallel for
 		for(int j = 0; j < data.cols(); ++j) {
 			// find maximally active coefficient
 			int idx;
-			double r = responses.col(j).maxCoeff(&idx);
+			double r = responses.col(j).array().abs().maxCoeff(&idx);
 
 			// update hidden states and filter responses
 			hiddenStates(idx, j) += r;
