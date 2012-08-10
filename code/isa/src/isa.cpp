@@ -543,6 +543,10 @@ void ISA::trainMP(const MatrixXd& data, const Parameters& params) {
 		if(!(*params.mp.callback)(0, *this))
 			return;
 
+	vector<int> from(numSubspaces());
+	for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
+		from[i] = f;
+
 	for(int i = 0; i < params.mp.maxIter; ++i) {
 		for(int j = 0; j + params.mp.batchSize <= data.cols(); j += params.mp.batchSize) {
 			X = data.middleCols(j, params.mp.batchSize);
@@ -555,8 +559,17 @@ void ISA::trainMP(const MatrixXd& data, const Parameters& params) {
 
 			// update filter matrix
 			mBasis += params.mp.stepWidth * P;
-
-			mBasis = normalize(mBasis);
+			if(numSubspaces() != numHiddens()) {
+				# pragma omp parallel for
+				for(int j = 0; j < numSubspaces(); ++j) {
+					// orthogonalize subspace
+					MatrixXd subsp = mBasis.middleCols(from[j], mSubspaces[j].dim());
+					SelfAdjointEigenSolver<MatrixXd> eigenSolver(subsp.transpose() * subsp);
+					mBasis.middleCols(from[j], mSubspaces[j].dim()) = subsp * eigenSolver.operatorInverseSqrt();
+				}
+			} else {
+				mBasis = normalize(mBasis);
+			}
 		}
 
 		if(params.mp.callback)
@@ -569,22 +582,53 @@ void ISA::trainMP(const MatrixXd& data, const Parameters& params) {
 
 MatrixXd ISA::matchingPursuit(const MatrixXd& data, const Parameters& params) {
 	MatrixXd hiddenStates = MatrixXd::Zero(numHiddens(), data.cols());
-	MatrixXd residuals = data;
 
-	for(int i = 0; i < params.mp.numCoeff; ++i) {
-		MatrixXd corr = mBasis.transpose() * residuals;
+	// assumes basis is normalized
+	MatrixXd responses = mBasis.transpose() * data;
+	MatrixXd gramMatrix = mBasis.transpose() * mBasis;
 
-		#pragma omp parallel for
-		for(int j = 0; j < corr.cols(); ++j) {
-			// find maximally active coefficient
-			int idx;
-			corr.col(j).maxCoeff(&idx);
+	if(numSubspaces() == numHiddens()) {
+		for(int i = 0; i < params.mp.numCoeff; ++i) {
+			#pragma omp parallel for
+			for(int j = 0; j < data.cols(); ++j) {
+				// find maximally active coefficient
+				int idx;
+				responses.col(j).array().abs().maxCoeff(&idx);
 
-			// store coefficient
-			hiddenStates(idx, j) += corr(idx, j);
+				// update hidden states and filter responses
+				double r = responses(idx, j);
+				hiddenStates(idx, j) += r;
+				responses.col(j) -= r * gramMatrix.col(idx);
+			}
 		}
+	} else {
+		// subspace responses
+		MatrixXd ssResponses = MatrixXd(numSubspaces(), data.cols());
 
-		residuals = data - mBasis * hiddenStates;
+		vector<int> from(numSubspaces());
+		for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
+			from[i] = f;
+
+		for(int i = 0; i < params.mp.numCoeff; ++i) {
+			// compute subspace responses
+			#pragma omp parallel for
+			for(int j = 0; j < numSubspaces(); ++j)
+				ssResponses.row(j) = responses.middleRows(from[j], mSubspaces[j].dim()).array().square().colwise().sum();
+
+			#pragma omp parallel for
+			for(int j = 0; j < data.cols(); ++j) {
+				// find maximally active coefficient
+				int idx;
+				ssResponses.col(j).maxCoeff(&idx);
+
+				for(int k = 0; k < mSubspaces[idx].dim(); ++k) {
+					// update hidden states and filter responses
+					double r = responses(from[idx] + k, j);
+					hiddenStates(idx, j) += r;
+					responses.col(j) -= r * gramMatrix.col(idx);
+				}
+			}
+		}
 	}
 
 	return hiddenStates;
