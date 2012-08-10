@@ -67,18 +67,23 @@ PyObject* GSM_scales(GSMObject* self, PyObject*, void*) {
 
 
 int GSM_set_scales(GSMObject* self, PyObject* value, void*) {
-	if(!PyArray_Check(value)) {
+	PyObject* array = PyArray_FROM_OTF(value, NPY_DOUBLE, NPY_IN_ARRAY);
+
+	if(!array) {
 		PyErr_SetString(PyExc_TypeError, "Scales should be of type `ndarray`.");
 		return -1;
 	}
 
 	try {
-		self->gsm->setScales(PyArray_ToMatrixXd(value));
+		self->gsm->setScales(PyArray_ToMatrixXd(array));
 
 	} catch(Exception exception) {
+		Py_DECREF(array);
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return -1;
 	}
+
+	Py_DECREF(array);
 
 	return 0;
 }

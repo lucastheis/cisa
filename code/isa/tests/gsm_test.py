@@ -16,7 +16,7 @@ from tempfile import mkstemp
 class Tests(unittest.TestCase):
 	def test_sample(self):
 		gsm = GSM(2, 1)
-		gsm.scales = asarray([2.])
+		gsm.scales = [2]
 
 		samples = gsm.sample(100)
 

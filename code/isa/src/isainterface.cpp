@@ -825,8 +825,10 @@ PyObject* ISA_train(ISAObject* self, PyObject* args, PyObject* kwds) {
 	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", const_cast<char**>(kwlist), &data, &parameters))
 		return 0;
 
+	data = PyArray_FROM_OTF(data, NPY_DOUBLE, NPY_F_CONTIGUOUS | NPY_ALIGNED);
+
 	// make sure data is stored in NumPy array
-	if(!PyArray_Check(data)) {
+	if(!data) {
 		PyErr_SetString(PyExc_TypeError, "Data has to be stored in a NumPy array.");
 		return 0;
 	}
@@ -838,9 +840,11 @@ PyObject* ISA_train(ISAObject* self, PyObject* args, PyObject* kwds) {
 		self->isa->train(PyArray_ToMatrixXd(data), params);
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		Py_DECREF(data);
 		return 0;
 	}
 
+	Py_DECREF(data);
 	Py_INCREF(Py_None);
 	return Py_None;
 }
@@ -897,21 +901,27 @@ PyObject* ISA_sample_nullspace(ISAObject* self, PyObject* args, PyObject* kwds) 
 	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", const_cast<char**>(kwlist), &data, &parameters))
 		return 0;
 
+	data= PyArray_FROM_OTF(data, NPY_DOUBLE, NPY_F_CONTIGUOUS | NPY_ALIGNED);
+
 	// make sure data is stored in NumPy array
-	if(!PyArray_Check(data)) {
+	if(!data) {
 		PyErr_SetString(PyExc_TypeError, "Data has to be stored in a NumPy array.");
 		return 0;
 	}
 
 	try {
-		return PyArray_FromMatrixXd(self->isa->sampleNullspace(
+		PyObject* samples = PyArray_FromMatrixXd(self->isa->sampleNullspace(
 			PyArray_ToMatrixXd(data),
 			PyObject_ToParameters(self, parameters)));
+		Py_DECREF(data);
+		return samples;
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		Py_DECREF(data);
 		return 0;
 	}
 
+	Py_DECREF(data);
 	return 0;
 }
 
@@ -928,32 +938,47 @@ PyObject* ISA_sample_posterior(ISAObject* self, PyObject* args, PyObject* kwds) 
 	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|OO", const_cast<char**>(kwlist), &data, &parameters, &hidden_states))
 		return 0;
 
+	data = PyArray_FROM_OTF(data, NPY_DOUBLE, NPY_F_CONTIGUOUS | NPY_ALIGNED);
+
 	// make sure data is stored in NumPy array
-	if(!PyArray_Check(data)) {
+	if(!data) {
 		PyErr_SetString(PyExc_TypeError, "Data has to be stored in a NumPy array.");
 		return 0;
 	}
 
-	if(hidden_states && !PyArray_Check(hidden_states)) {
-		PyErr_SetString(PyExc_TypeError, "Hidden states have to be stored in a NumPy array.");
-		return 0;
+	if(hidden_states) {
+		hidden_states = PyArray_FROM_OTF(hidden_states, NPY_DOUBLE, NPY_F_CONTIGUOUS | NPY_ALIGNED);
+
+		if(hidden_states) {
+			PyErr_SetString(PyExc_TypeError, "Hidden states have to be stored in a NumPy array.");
+			Py_DECREF(data);
+			return 0;
+		}
 	}
 
 	try {
+		PyObject* samples;
 		if(hidden_states)
-			return PyArray_FromMatrixXd(self->isa->samplePosterior(
+			samples = PyArray_FromMatrixXd(self->isa->samplePosterior(
 				PyArray_ToMatrixXd(data),
 				PyArray_ToMatrixXd(hidden_states),
 				PyObject_ToParameters(self, parameters)));
 		else
-			return PyArray_FromMatrixXd(self->isa->samplePosterior(
+			samples = PyArray_FromMatrixXd(self->isa->samplePosterior(
 				PyArray_ToMatrixXd(data),
 				PyObject_ToParameters(self, parameters)));
+		Py_DECREF(data);
+		Py_XDECREF(hidden_states);
+		return samples;
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		Py_DECREF(data);
+		Py_XDECREF(hidden_states);
 		return 0;
 	}
 
+	Py_DECREF(data);
+	Py_XDECREF(hidden_states);
 	return 0;
 }
 
@@ -969,8 +994,10 @@ PyObject* ISA_sample_posterior_ais(ISAObject* self, PyObject* args, PyObject* kw
 	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", const_cast<char**>(kwlist), &data, &parameters))
 		return 0;
 
-	// make sure data is stored in NumPy array
-	if(!PyArray_Check(data)) {
+	// make sure data is stored in contiguous NumPy array
+	data = PyArray_FROM_OTF(data, NPY_DOUBLE, NPY_F_CONTIGUOUS | NPY_ALIGNED);
+
+	if(!data) {
 		PyErr_SetString(PyExc_TypeError, "Data has to be stored in a NumPy array.");
 		return 0;
 	}
@@ -985,15 +1012,18 @@ PyObject* ISA_sample_posterior_ais(ISAObject* self, PyObject* args, PyObject* kw
 
 		PyObject* tuple = Py_BuildValue("(OO)", samples, logWeights);
 
+		Py_DECREF(data);
 		Py_DECREF(samples);
 		Py_DECREF(logWeights);
 
 		return tuple;
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		Py_DECREF(data);
 		return 0;
 	}
 
+	Py_DECREF(data);
 	return 0;
 }
 
@@ -1009,16 +1039,20 @@ PyObject* ISA_sample_ais(ISAObject* self, PyObject* args, PyObject* kwds) {
 	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", const_cast<char**>(kwlist), &data, &parameters))
 		return 0;
 
-	// make sure data is stored in NumPy array
-	if(!PyArray_Check(data)) {
+	// make sure data is stored in contiguous NumPy array
+	data = PyArray_FROM_OTF(data, NPY_DOUBLE, NPY_F_CONTIGUOUS | NPY_ALIGNED);
+
+	if(!data) {
 		PyErr_SetString(PyExc_TypeError, "Data has to be stored in a NumPy array.");
 		return 0;
 	}
 
 	try {
-		return PyArray_FromMatrixXd(self->isa->sampleAIS(
+		PyObject* samples = PyArray_FromMatrixXd(self->isa->sampleAIS(
 			PyArray_ToMatrixXd(data),
 			PyObject_ToParameters(self, parameters)));
+		Py_DECREF(data);
+		return samples;
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
