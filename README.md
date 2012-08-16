@@ -7,8 +7,7 @@ learning in overcomplete linear models with sparse source distributions.
 
 ## Requirements
 
-The following tools are needed to compile the L-BFGS library:
-
+* NumPy >= 2.6.0
 * automake >= 1.11.0
 * libtool >= 2.4.0
 
@@ -18,7 +17,7 @@ I have tested it with the above versions, but older versions might also work.
 
 ### Linux
 
-Go to ./code/liblbfgs and execute the following:
+Go to `./code/liblbfgs` and execute the following:
 
 	./autogen.sh
 	./configure --enable-sse2
@@ -37,7 +36,7 @@ newer ones.
 	brew install autoconf automake libtool
 	brew link autoconf automake libtool
 
-Next, go to ./code/liblbfgs and execute the following:
+Next, go to `./code/liblbfgs` and execute the following:
 
 	./autogen.sh
 	./configure --disable-dependency-tracking --enable-sse2
