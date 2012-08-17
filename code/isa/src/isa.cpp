@@ -200,7 +200,7 @@ void ISA::initialize() {
 			gaussian = GSM(mSubspaces[i].dim(), 1);
 
 			// sample radial component from Gamma distribution
-			RowVectorXd radial = sampleGamma(1, 10000, gsm.dim());
+			RowVectorXd radial = sampleGamma(1, 10000, mSubspaces[i].dim());
 
 			// sample from unit sphere and scale by radial component
 			MatrixXd data = normalize(gaussian.sample(10000)).array().rowwise() * radial.array();
@@ -209,6 +209,7 @@ void ISA::initialize() {
 			gsm = GSM(mSubspaces[i].dim(), mSubspaces[i].numScales());
 			gsm.train(data, 200, 1e-8);
 			gsm.normalize();
+			mSubspaces[i].setScales(gsm.scales());
 		}
 
 		mSubspaces[i].setScales(gsm.scales());
