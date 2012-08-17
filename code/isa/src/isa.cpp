@@ -199,13 +199,11 @@ void ISA::initialize() {
 		if(gsm.dim() != mSubspaces[i].dim() || gsm.numScales() != mSubspaces[i].numScales()) {
 			gaussian = GSM(mSubspaces[i].dim(), 1);
 
-			// sample from Laplace with unit variance
-			RowVectorXd radial = (ArrayXXd::Random(1, 10000) + 1.) / 2.;
-			radial = radial.array().log() / sqrt(2.);
+			// sample radial component from Gamma distribution
+			RowVectorXd radial = sampleGamma(1, 10000, gsm.dim());
 
 			// sample from unit sphere and scale by radial component
-			MatrixXd data = gaussian.sample(10000);
-			data = normalize(data).array().rowwise() * radial.array();
+			MatrixXd data = normalize(gaussian.sample(10000)).array().rowwise() * radial.array();
 
 			// fit GSM to multivariate Laplace distribution
 			gsm = GSM(mSubspaces[i].dim(), mSubspaces[i].numScales());
@@ -405,7 +403,7 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 			cout << setw(5) << i;
 			if(complete())
 				cout << setw(14) << fixed << setprecision(7) << evaluate(data);
-			if(params.adaptive && (params.trainingMethod[0] == 's' || params.trainingMethod[0] == 'S'))
+			if(params.adaptive && (params.trainingMethod[0] == 's' || params.trainingMethod[0] == 'S') && params.trainBasis)
 				cout << setw(14) << fixed << setprecision(7) << params.sgd.stepWidth;
 			if(params.learnGaussianity)
 				cout << setw(14) << fixed << setprecision(4) << mGaussianity;
@@ -559,23 +557,22 @@ void ISA::trainMP(const MatrixXd& data, const Parameters& params) {
 
 			// update filter matrix
 			mBasis += params.mp.stepWidth * P;
-			if(numSubspaces() != numHiddens()) {
-				# pragma omp parallel for
-				for(int j = 0; j < numSubspaces(); ++j) {
-					// orthogonalize subspace
-					MatrixXd subsp = mBasis.middleCols(from[j], mSubspaces[j].dim());
-					SelfAdjointEigenSolver<MatrixXd> eigenSolver(subsp.transpose() * subsp);
-					mBasis.middleCols(from[j], mSubspaces[j].dim()) = subsp * eigenSolver.operatorInverseSqrt();
-				}
-			} else {
-				mBasis = normalize(mBasis);
-			}
+			mBasis = normalize(mBasis);
 		}
 
 		if(params.mp.callback)
 			if(!(*params.mp.callback)(i + 1, *this))
 				break;
 	}
+
+	if(numSubspaces() != numHiddens())
+		# pragma omp parallel for
+		for(int j = 0; j < numSubspaces(); ++j) {
+			// orthogonalize subspace
+			MatrixXd subsp = mBasis.middleCols(from[j], mSubspaces[j].dim());
+			SelfAdjointEigenSolver<MatrixXd> eigenSolver(subsp.transpose() * subsp);
+			mBasis.middleCols(from[j], mSubspaces[j].dim()) = subsp * eigenSolver.operatorInverseSqrt();
+		}
 }
 
 
@@ -623,9 +620,10 @@ MatrixXd ISA::matchingPursuit(const MatrixXd& data, const Parameters& params) {
 
 				for(int k = 0; k < mSubspaces[idx].dim(); ++k) {
 					// update hidden states and filter responses
-					double r = responses(from[idx] + k, j);
-					hiddenStates(idx, j) += r;
-					responses.col(j) -= r * gramMatrix.col(idx);
+					double l = from[idx] + k;
+					double r = responses(l, j);
+					hiddenStates(l, j) += r;
+					responses.col(j) -= r * gramMatrix.col(l);
 				}
 			}
 		}

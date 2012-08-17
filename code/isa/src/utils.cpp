@@ -48,6 +48,17 @@ ArrayXXd sampleNormal(int m, int n) {
 
 
 
+ArrayXXd sampleGamma(int m, int n, int k) {
+	ArrayXXd samples = ArrayXXd::Zero(m, n);
+
+	for(int i = 1; i < k; ++i)
+		samples -= (ArrayXXd::Random(m, n) / 2. + 0.5).log();
+
+	return samples;
+}
+
+
+
 VectorXi argsort(const VectorXd& data) {
 	// create pairs of values and indices
 	vector<pair<double, int> > pairs(data.size());
