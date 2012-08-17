@@ -543,7 +543,7 @@ void ISA::trainMP(const MatrixXd& data, const Parameters& params) {
 		if(!(*params.mp.callback)(0, *this))
 			return;
 
-	vector<int> from(numSubspaces());
+	int from[numSubspaces()];
 	for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
 		from[i] = f;
 
@@ -605,7 +605,7 @@ MatrixXd ISA::matchingPursuit(const MatrixXd& data, const Parameters& params) {
 		// subspace responses
 		MatrixXd ssResponses = MatrixXd(numSubspaces(), data.cols());
 
-		vector<int> from(numSubspaces());
+		int from[numSubspaces()];
 		for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
 			from[i] = f;
 
