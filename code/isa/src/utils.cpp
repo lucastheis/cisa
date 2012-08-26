@@ -39,8 +39,8 @@ ArrayXXd sampleNormal(int m, int n) {
 #else
 #warning "No C++11 support. Using my own implementation of the Box-Muller transform."
 ArrayXXd sampleNormal(int m, int n) {
-	ArrayXXd U1 = ArrayXXd::Random(m, n) / 2. + 0.5;
-	ArrayXXd U2 = ArrayXXd::Random(m, n) / 2. + 0.5;
+	ArrayXXd U1 = ArrayXXd::Random(m, n).abs();
+	ArrayXXd U2 = ArrayXXd::Random(m, n).abs();
 	// Box-Muller transform
 	return (-2. * U1.log()).sqrt() * (2. * PI * U2).cos();
 }
@@ -52,7 +52,7 @@ ArrayXXd sampleGamma(int m, int n, int k) {
 	ArrayXXd samples = ArrayXXd::Zero(m, n);
 
 	for(int i = 0; i < k; ++i)
-		samples -= (ArrayXXd::Random(m, n) / 2. + 0.5).log();
+		samples -= ArrayXXd::Random(m, n).abs().log();
 
 	return samples;
 }
@@ -108,7 +108,7 @@ double logDetPD(const MatrixXd& matrix) {
 
 
 MatrixXd deleteRows(const MatrixXd& matrix, vector<int> indices) {
-	MatrixXd result = ArrayXXd::Zero(matrix.rows() - indices.size(), matrix.cols()) - 8.;
+	MatrixXd result = ArrayXXd::Zero(matrix.rows() - indices.size(), matrix.cols());
 
 	sort(indices.begin(), indices.end());
 
@@ -128,7 +128,7 @@ MatrixXd deleteRows(const MatrixXd& matrix, vector<int> indices) {
 
 
 MatrixXd deleteCols(const MatrixXd& matrix, vector<int> indices) {
-	MatrixXd result = ArrayXXd::Zero(matrix.rows(), matrix.cols() - indices.size()) - 9.;
+	MatrixXd result = ArrayXXd::Zero(matrix.rows(), matrix.cols() - indices.size());
 
 	sort(indices.begin(), indices.end());
 
