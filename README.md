@@ -49,5 +49,5 @@ Once the L-BFGS library is compiled, go back to the root directory and execute:
 
 ## Reference
 
-L. Theis, J. Sohl-Dickstein, M. Bethge, *Training sparse natural image models with a fast Gibbs
+L. Theis, J. Sohl-Dickstein, and M. Bethge, *Training sparse natural image models with a fast Gibbs
 sampler of an extended state space*, Advances in Neural Information Processing Systems 26, 2013
