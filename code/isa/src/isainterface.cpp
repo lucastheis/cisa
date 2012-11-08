@@ -901,7 +901,7 @@ PyObject* ISA_sample_nullspace(ISAObject* self, PyObject* args, PyObject* kwds) 
 	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", const_cast<char**>(kwlist), &data, &parameters))
 		return 0;
 
-	data= PyArray_FROM_OTF(data, NPY_DOUBLE, NPY_F_CONTIGUOUS | NPY_ALIGNED);
+	data = PyArray_FROM_OTF(data, NPY_DOUBLE, NPY_F_CONTIGUOUS | NPY_ALIGNED);
 
 	// make sure data is stored in NumPy array
 	if(!data) {
@@ -949,7 +949,7 @@ PyObject* ISA_sample_posterior(ISAObject* self, PyObject* args, PyObject* kwds) 
 	if(hidden_states) {
 		hidden_states = PyArray_FROM_OTF(hidden_states, NPY_DOUBLE, NPY_F_CONTIGUOUS | NPY_ALIGNED);
 
-		if(hidden_states) {
+		if(!hidden_states) {
 			PyErr_SetString(PyExc_TypeError, "Hidden states have to be stored in a NumPy array.");
 			Py_DECREF(data);
 			return 0;
