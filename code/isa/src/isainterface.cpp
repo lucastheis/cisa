@@ -124,7 +124,7 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 				if(PyFloat_Check(stepWidth))
 					params.sgd.stepWidth = PyFloat_AsDouble(stepWidth);
 				else if(PyInt_Check(stepWidth))
-					params.sgd.stepWidth = static_cast<double>(PyFloat_AsDouble(stepWidth));
+					params.sgd.stepWidth = static_cast<double>(PyInt_AsLong(stepWidth));
 				else
 					throw Exception("sgd.step_width should be of type `float`.");
 
@@ -206,7 +206,7 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 				if(PyFloat_Check(stepWidth))
 					params.mp.stepWidth = PyFloat_AsDouble(stepWidth);
 				else if(PyInt_Check(stepWidth))
-					params.mp.stepWidth = static_cast<double>(PyFloat_AsDouble(stepWidth));
+					params.mp.stepWidth = static_cast<double>(PyInt_AsLong(stepWidth));
 				else
 					throw Exception("mp.step_width should be of type `float`.");
 
