@@ -35,7 +35,7 @@ modules = [
 
 setup(
 	name='isa',
-	version='0.3.1',
+	version='0.3.2',
 	author='Lucas Theis',
 	author_email='lucas@theis.io',
 	description='A C++ implementation of overcomplete ISA.',
