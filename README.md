@@ -7,11 +7,12 @@ learning in overcomplete linear models with sparse source distributions.
 
 ## Requirements
 
-* NumPy >= 2.6.0
+* Python >= 2.6.0
+* NumPy >= 1.6.2
 * automake >= 1.11.0
 * libtool >= 2.4.0
 
-I have tested it with the above versions, but older versions might also work.
+I have tested the code with the above versions, but older versions might also work.
 
 ## Installation
 
@@ -45,3 +46,8 @@ Next, go to `./code/liblbfgs` and execute the following:
 Once the L-BFGS library is compiled, go back to the root directory and execute:
 
 	python setup.py build
+
+## Reference
+
+L. Theis, J. Sohl-Dickstein, M. Bethge, *Training sparse natural image models with a fast Gibbs
+sampler of an extended state space*, Advances in Neural Information Processing Systems 26, 2013
