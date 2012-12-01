@@ -47,6 +47,52 @@ Once the L-BFGS library is compiled, go back to the root directory and execute:
 
 	python setup.py build
 
+## Example
+
+```python
+from isa import ISA
+
+# create overcomplete model with two-dimensional subspaces
+isa = ISA(num_visibles=16, num_hiddens=32, ssize=2)
+
+# initialize filters and source distributions
+isa.initialize(data)
+
+# data should be stored in a 16xN NumPy array
+data = load('data.npz')['data']
+
+# will be called in every iteration
+def callback(i, isa):
+	print i
+
+# optimize basis using matching pursuit
+isa.train(data, parameters={
+	'training_method': 'mp',
+	'mp': {
+		'max_iter': 50,
+		'step_width': 0.01,
+		'batch_size': 100,
+		'num_coeff': 10},
+	'callback': callback})
+
+# optimize model using persistent EM
+isa.train(data, parameters={
+	'max_iter': 100, # number of EM iterations
+	'training_method': 'lbfgs',
+	'lbfgs': {
+		'max_iter': 100, # number of iterations in each M-step
+	},
+	'sampling_method': 'gibbs',
+	'gibbs': {
+		'ini_iter': 10, # initialize persistent Markov chain before training
+		'num_iter': 1 # number of iterations in each E-step
+	},
+	'callback': callback})
+
+# gives you a list of all available parameters
+parameters = isa.default_parameters()
+```
+
 ## Reference
 
 L. Theis, J. Sohl-Dickstein, and M. Bethge, *Training sparse natural image models with a fast Gibbs
