@@ -7,6 +7,8 @@ using namespace Eigen;
 
 class Distribution {
 	public:
+		virtual ~Distribution();
+
 		virtual int dim() = 0;
 		virtual Array<double, 1, Dynamic> logLikelihood(const MatrixXd& data) = 0;
 		virtual double evaluate(const MatrixXd& data);
