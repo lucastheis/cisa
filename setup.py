@@ -3,7 +3,12 @@
 import os
 import sys
 import numpy
+
+sys.path.append('./code')
+
 from distutils.core import setup, Extension
+from distutils.ccompiler import CCompiler
+from tools import parallelCCompiler
 
 modules = [
 	Extension('isa',
@@ -32,6 +37,9 @@ modules = [
 			'-fopenmp',
 			'-Wno-parentheses',
 			'-Wno-write-strings'] + ['-std=c++0x'] if sys.platform != 'darwin' else [])]
+
+# enable parallel compilation
+CCompiler.compile = parallelCCompiler
 
 setup(
 	name='isa',
