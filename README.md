@@ -18,11 +18,15 @@ I have tested the code with the above versions, but older versions might also wo
 
 ### Linux
 
+Make sure autoconf, automake and libtool are installed.
+
+	apt-get install autoconf automake libtool
+
 Go to `./code/liblbfgs` and execute the following:
 
 	./autogen.sh
 	./configure --enable-sse2
-	make
+	make CFLAGS="-fPIC"
 
 Once the L-BFGS library is compiled, go back to the root directory and execute:
 
