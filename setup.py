@@ -36,6 +36,7 @@ modules = [
 		extra_compile_args=[
 			'-fopenmp',
 			'-Wno-parentheses',
+			'-Wno-cpp',
 			'-Wno-write-strings'] + ['-std=c++0x'] if sys.platform != 'darwin' else [])]
 
 # enable parallel compilation
