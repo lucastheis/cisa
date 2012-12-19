@@ -63,8 +63,6 @@ PyObject* ISA_prior_loglikelihood(ISAObject*, PyObject*, PyObject*);
 PyObject* ISA_loglikelihood(ISAObject*, PyObject*, PyObject*);
 PyObject* ISA_evaluate(ISAObject*, PyObject*, PyObject*);
 
-PyObject* ISA_posterior_weights(ISAObject*, PyObject*, PyObject*);
-
 PyObject* ISA_reduce(ISAObject*, PyObject*, PyObject*);
 PyObject* ISA_setstate(ISAObject*, PyObject*, PyObject*);
 

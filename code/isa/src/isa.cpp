@@ -54,7 +54,6 @@ ISA::Parameters::Parameters() {
 	adaptive = true;
 	trainPrior = true;
 	trainBasis = true;
-	learnGaussianity = false;
 	mergeSubspaces = false;
 	orthogonalize = false;
 	callback = 0;
@@ -104,7 +103,6 @@ ISA::Parameters::Parameters(const Parameters& params) :
 	adaptive(params.adaptive),
 	trainPrior(params.trainPrior),
 	trainBasis(params.trainBasis),
-	learnGaussianity(params.learnGaussianity),
 	mergeSubspaces(params.mergeSubspaces),
 	persistent(params.persistent),
 	orthogonalize(params.orthogonalize),
@@ -143,7 +141,6 @@ ISA::Parameters& ISA::Parameters::operator=(const Parameters& params) {
 	adaptive = params.adaptive;
 	trainPrior = params.trainPrior;
 	trainBasis = params.trainBasis;
-	learnGaussianity = params.learnGaussianity;
 	mergeSubspaces = params.mergeSubspaces;
 	orthogonalize = params.orthogonalize;
 	persistent = params.persistent;
@@ -163,7 +160,7 @@ ISA::Parameters& ISA::Parameters::operator=(const Parameters& params) {
 
 
 ISA::ISA(int numVisibles, int numHiddens, int sSize, int numScales) :
-	mNumVisibles(numVisibles), mNumHiddens(numHiddens), mGaussianity(0.)
+	mNumVisibles(numVisibles), mNumHiddens(numHiddens)
 {
 	if(mNumHiddens < mNumVisibles)
 		mNumHiddens = mNumVisibles;
@@ -290,8 +287,6 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 			cout << setw(14) << "Value";
 		if(params.adaptive && (params.trainingMethod[0] == 's' || params.trainingMethod[0] == 'S'))
 			cout << setw(14) << "Step width";
-		if(params.learnGaussianity)
-			cout << setw(14) << "Gaussianity";
 		cout << endl;
 	}
 
@@ -316,86 +311,34 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 		complBasis << basis(), nullspaceBasis();
 		complData << data, nullspaceBasis() * mHiddenStates;
 
-		if(mGaussianity > 0.) {
-			// train mixture of Gaussian and ISA
-			Array<double, 1, Dynamic> pw = posteriorWeights(data, params);
-			vector<int> indices;
+		if(params.trainPrior)
+			// optimize marginal distributions
+			trainPrior(mHiddenStates, params);
 
-			// remove data points which appear Gaussian
-			for(int i = 0; i < data.cols(); ++i)
-				if(rand() / static_cast<double>(RAND_MAX) > pw[i])
-					indices.push_back(i);
+		if(params.mergeSubspaces)
+			mHiddenStates = mergeSubspaces(mHiddenStates, params);
 
-			// remove data assigned to Gaussian
-			MatrixXd hiddenStatesISA = deleteCols(mHiddenStates, indices);
-			MatrixXd complDataISA = deleteCols(complData, indices);
+		if(params.trainBasis) {
+			// optimize basis
+			bool improved;
 
-			if(complDataISA.cols() < mNumHiddens * 10)
-				cout << "Warning: small number of effective data points." << endl;
+			switch(params.trainingMethod[0]) {
+				case 's':
+				case 'S':
+					improved = trainSGD(complData, complBasis, params);
 
-			if(params.learnGaussianity)
-				mGaussianity = 1. - pw.mean();
+					if(params.adaptive)
+						// adapt step width
+						params.sgd.stepWidth *= improved ? 1.1 : 0.5;
+					break;
 
-			if(params.trainPrior)
-				// optimize marginal distributions
-				trainPrior(hiddenStatesISA, params);
+				case 'l':
+				case 'L':
+					trainLBFGS(complData, complBasis, params);
+					break;
 
-			if(params.mergeSubspaces)
-				cout << "Warning: GISA cannot be used with mergeSubspaces at this point." << endl;
-
-			if(params.trainBasis) {
-				// optimize basis
-				bool improved;
-
-				switch(params.trainingMethod[0]) {
-					case 's':
-					case 'S':
-						improved = trainSGD(complDataISA, complBasis, params);
-
-						if(params.adaptive)
-							// adapt step width
-							params.sgd.stepWidth *= improved ? 1.1 : 0.5;
-						break;
-
-					case 'l':
-					case 'L':
-						trainLBFGS(complDataISA, complBasis, params);
-						break;
-
-					default:
-						throw Exception("Unknown training method.");
-				}
-			}
-		} else {
-			if(params.trainPrior)
-				// optimize marginal distributions
-				trainPrior(mHiddenStates, params);
-
-			if(params.mergeSubspaces)
-				mHiddenStates = mergeSubspaces(mHiddenStates, params);
-
-			if(params.trainBasis) {
-				// optimize basis
-				bool improved;
-
-				switch(params.trainingMethod[0]) {
-					case 's':
-					case 'S':
-						improved = trainSGD(complData, complBasis, params);
-
-						if(params.adaptive)
-							// adapt step width
-							params.sgd.stepWidth *= improved ? 1.1 : 0.5;
-						break;
-
-					case 'l':
-					case 'L':
-						trainLBFGS(complData, complBasis, params);
-						break;
-
-					default:
-						throw Exception("Unknown training method.");
-				}
+				default:
+					throw Exception("Unknown training method.");
 			}
 		}
 
@@ -406,8 +349,6 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 				cout << setw(14) << fixed << setprecision(7) << evaluate(data);
 			if(params.adaptive && (params.trainingMethod[0] == 's' || params.trainingMethod[0] == 'S') && params.trainBasis)
 				cout << setw(14) << fixed << setprecision(7) << params.sgd.stepWidth;
-			if(params.learnGaussianity)
-				cout << setw(14) << fixed << setprecision(4) << mGaussianity;
 			cout << endl;
 		}
 
@@ -745,17 +686,7 @@ MatrixXd ISA::mergeSubspaces(MatrixXd states, const Parameters& params) {
 
 
 MatrixXd ISA::sample(int numSamples) {
-	if(mGaussianity > 0.) {
-		MatrixXd samples = basis() * samplePrior(numSamples);
-
-		for(int i = 0; i < numSamples; ++i)
-			if(rand() / static_cast<double>(RAND_MAX) < mGaussianity)
-				samples.col(i) = sampleNormal(mNumVisibles, 1);
-
-		return samples;
-	} else {
-		return basis() * samplePrior(numSamples);
-	}
+	return basis() * samplePrior(numSamples);
 }
 
 
@@ -981,29 +912,6 @@ Array<double, 1, Dynamic> ISA::logLikelihood(const MatrixXd& data) {
 
 
 Array<double, 1, Dynamic> ISA::logLikelihood(const MatrixXd& data, const Parameters& params) {
-	Array<double, 1, Dynamic> logLik = logLikelihoodISA(data, params);
-
-	if(mGaussianity > 0.) {
-		Array<double, 1, Dynamic> logLikGauss =
-			-data.colwise().squaredNorm().array() / 2. - data.rows() / 2. * log(2. * PI);
-
-		Array<double, 2, Dynamic> logLikMix(2, data.cols());
-		logLikMix << logLik, logLikGauss;
-
-		Array<double, 1, Dynamic> logLikMax = logLikMix.colwise().maxCoeff() - 1.;
-
-		// TODO: make faster?
-		// numerically stable weighted log-sum-exp
-		return ((1. - mGaussianity) * (logLik - logLikMax).exp()
-			+ mGaussianity * (logLikGauss - logLikMax).exp()).log() + logLikMax;
-	}
-
-	return logLik;
-}
-
-
-
-Array<double, 1, Dynamic> ISA::logLikelihoodISA(const MatrixXd& data, const Parameters& params) {
 	if(data.rows() != numVisibles())
 		throw Exception("Data has wrong dimensionality.");
 
@@ -1036,16 +944,4 @@ MatrixXd ISA::sampleAIS(const MatrixXd& data, const Parameters& params) {
 
 double ISA::evaluate(const MatrixXd& data, const Parameters& params) {
 	return -logLikelihood(data, params).mean() / log(2.) / dim();
-}
-
-
-
-Array<double, 1, Dynamic> ISA::posteriorWeights(const MatrixXd& data, const Parameters& params) {
-	Array<double, 1, Dynamic> logLikGauss = -data.colwise().squaredNorm().array() / 2. - data.rows() / 2. * log(2. * PI);
-	Array<double, 1, Dynamic> logLikISA = logLikelihoodISA(data, params);
-
-	Array<double, 1, Dynamic> jntGauss = logLikGauss.exp() * mGaussianity;
-	Array<double, 1, Dynamic> jntISA = logLikISA.exp() * (1. - mGaussianity);
-
-	return jntISA / (jntISA + jntGauss);
 }

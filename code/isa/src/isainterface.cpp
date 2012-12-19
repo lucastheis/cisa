@@ -81,13 +81,6 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 			else
 				throw Exception("orthogonalize should be of type `bool`.");
 
-		PyObject* learn_gaussianity = PyDict_GetItemString(parameters, "learn_gaussianity");
-		if(learn_gaussianity)
-			if(PyBool_Check(learn_gaussianity))
-				params.learnGaussianity = (learn_gaussianity == Py_True);
-			else
-				throw Exception("learn_gaussianity should be of type `bool`.");
-
 		PyObject* callback = PyDict_GetItemString(parameters, "callback");
 		if(callback)
 			if(PyCallable_Check(callback))
@@ -449,36 +442,6 @@ int ISA_set_A(ISAObject* self, PyObject* value, void*) {
 
 
 
-PyObject* ISA_gaussianity(ISAObject* self, PyObject*, void*) {
-	return PyFloat_FromDouble(self->isa->gaussianity());
-}
-
-
-
-int ISA_set_gaussianity(ISAObject* self, PyObject* value, void*) {
-	double gaussianity;
-
-	if(PyFloat_Check(value)) {
-		gaussianity = PyFloat_AsDouble(value);
-	} else if(PyInt_Check(value)) {
-		gaussianity = PyInt_AsLong(value);
-	} else {
-		PyErr_SetString(PyExc_TypeError, "gaussianity should be of type `float`.");
-		return -1;
-	}
-
-	try {
-		self->isa->setGaussianity(gaussianity);
-	} catch(Exception exception) {
-		PyErr_SetString(PyExc_RuntimeError, exception.message());
-		return -1;
-	}
-
-	return 0;
-}
-
-
-
 PyObject* ISA_basis(ISAObject* self, PyObject*, PyObject*) {
 	try {
 		return PyArray_FromMatrixXd(self->isa->basis());
@@ -677,14 +640,6 @@ PyObject* ISA_default_parameters(ISAObject* self) {
 		Py_INCREF(Py_True);
 	} else {
 		PyDict_SetItemString(parameters, "train_prior", Py_False);
-		Py_INCREF(Py_False);
-	}
-
-	if(params.learnGaussianity) {
-		PyDict_SetItemString(parameters, "learn_gaussianity", Py_True);
-		Py_INCREF(Py_True);
-	} else {
-		PyDict_SetItemString(parameters, "learn_gaussianity", Py_False);
 		Py_INCREF(Py_False);
 	}
 
@@ -1258,37 +1213,6 @@ PyObject* ISA_evaluate(ISAObject* self, PyObject* args, PyObject* kwds) {
 		return PyFloat_FromDouble(self->isa->evaluate(
 			PyArray_ToMatrixXd(data),
 			PyObject_ToParameters(self, parameters)));
-	} catch(Exception exception) {
-		PyErr_SetString(PyExc_RuntimeError, exception.message());
-		return 0;
-	}
-
-	return 0;
-}
-
-
-
-PyObject* ISA_posterior_weights(ISAObject* self, PyObject* args, PyObject* kwds) {
-	const char* kwlist[] = {"data", "parameters"};
-
-	PyObject* data;
-	PyObject* parameters = 0;
-
-	// read arguments
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", const_cast<char**>(kwlist), &data, &parameters))
-		return 0;
-
-	// make sure data is stored in NumPy array
-	if(!PyArray_Check(data)) {
-		PyErr_SetString(PyExc_TypeError, "Data has to be stored in a NumPy array.");
-		return 0;
-	}
-
-	try {
-		return PyArray_FromMatrixXd(self->isa->posteriorWeights(
-			PyArray_ToMatrixXd(data),
-			PyObject_ToParameters(self, parameters)));
-
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
