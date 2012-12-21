@@ -13,23 +13,27 @@
 
 using namespace std;
 
-static lbfgsfloatval_t evaluateLBFGS(void* instance, const lbfgsfloatval_t* x, lbfgsfloatval_t* g, int, double) {
+#if LBFGS_FLOAT != 32
+#error "liblbfgs needs to be compiled with single precision."
+#endif
+
+static lbfgsfloatval_t evaluateLBFGS(void* instance, const lbfgsfloatval_t* x, lbfgsfloatval_t* g, int, lbfgsfloatval_t) {
 	// unpack user data
-	ISA* isa = static_cast<pair<ISA*, MatrixXd*>*>(instance)->first;
-	const MatrixXd& data = *static_cast<pair<ISA*, const MatrixXd*>*>(instance)->second;
+	ISA* isa = static_cast<pair<ISA*, MatrixXf*>*>(instance)->first;
+	const MatrixXf& data = *static_cast<pair<ISA*, const MatrixXf*>*>(instance)->second;
 
 	// interpret parameters and gradients
 	Map<Matrix<lbfgsfloatval_t, Dynamic, Dynamic> > W(const_cast<lbfgsfloatval_t*>(x), isa->numHiddens(), isa->numHiddens());
 	Map<Matrix<lbfgsfloatval_t, Dynamic, Dynamic> > dW(g, isa->numHiddens(), isa->numHiddens());
 
 	// compute hidden states
-	MatrixXd states = W * data;
+	MatrixXf states = W * data;
 
 	// LU decomposition
-	PartialPivLU<MatrixXd> filterLU(W);
+	PartialPivLU<MatrixXf> filterLU(W);
 
 	// log-determinant of filter matrix
-	double logDet = filterLU.matrixLU().diagonal().array().abs().log().sum();
+	float logDet = filterLU.matrixLU().diagonal().array().abs().log().sum();
 
 	// compute gradient
 	dW = isa->priorEnergyGradient(states) * data.transpose() / data.cols() - filterLU.inverse().transpose();
@@ -164,7 +168,7 @@ ISA::ISA(int numVisibles, int numHiddens, int sSize, int numScales) :
 {
 	if(mNumHiddens < mNumVisibles)
 		mNumHiddens = mNumVisibles;
-	mBasis = ArrayXXd::Random(mNumVisibles, mNumHiddens) / 10.;
+	mBasis = ArrayXXf::Random(mNumVisibles, mNumHiddens) / 10.;
 
 	for(int i = 0; i < mNumHiddens / sSize; ++i)
 		mSubspaces.push_back(GSM(sSize, numScales));
@@ -180,9 +184,9 @@ ISA::~ISA() {
 
 
 
-MatrixXd ISA::nullspaceBasis() {
+MatrixXf ISA::nullspaceBasis() {
 	// TODO: JacobiSVD is slow, can we replace it with something faster?
-	JacobiSVD<MatrixXd> svd(basis(), ComputeFullV);
+	JacobiSVD<MatrixXf> svd(basis(), ComputeFullV);
 	return svd.matrixV().rightCols(numHiddens() - numVisibles()).transpose();
 }
 
@@ -197,10 +201,10 @@ void ISA::initialize() {
 			gaussian = GSM(mSubspaces[i].dim(), 1);
 
 			// sample radial component from Gamma distribution
-			RowVectorXd radial = sampleGamma(1, 10000, mSubspaces[i].dim());
+			RowVectorXf radial = sampleGamma(1, 10000, mSubspaces[i].dim());
 
 			// sample from unit sphere and scale by radial component
-			MatrixXd data = normalize(gaussian.sample(10000)).array().rowwise() * radial.array();
+			MatrixXf data = normalize(gaussian.sample(10000)).array().rowwise() * radial.array();
 
 			// fit GSM to multivariate Laplace distribution
 			gsm = GSM(mSubspaces[i].dim(), mSubspaces[i].numScales());
@@ -215,13 +219,13 @@ void ISA::initialize() {
 
 
 
-void ISA::initialize(const MatrixXd& data) {
+void ISA::initialize(const MatrixXf& data) {
 	if(data.rows() != numVisibles())
 		throw Exception("Data has wrong dimensionality.");
 
 	// whiten data
-	SelfAdjointEigenSolver<MatrixXd> eigenSolver1(covariance(data));
-	MatrixXd dataWhite = eigenSolver1.operatorInverseSqrt() * data;
+	SelfAdjointEigenSolver<MatrixXf> eigenSolver1(covariance(data));
+	MatrixXf dataWhite = eigenSolver1.operatorInverseSqrt() * data;
 
 	// sort data by norm descending
 	VectorXi indices = argsort(dataWhite.colwise().squaredNorm());
@@ -232,7 +236,7 @@ void ISA::initialize(const MatrixXd& data) {
 	N = N > data.cols() ? data.cols() : N;
 
 	// store N largest data points and normalize
-	MatrixXd dataWhiteLarge = MatrixXd::Zero(data.rows(), N);
+	MatrixXf dataWhiteLarge = MatrixXf::Zero(data.rows(), N);
 	for(int i = 0; i < N; ++i)
 		dataWhiteLarge.col(i) = dataWhite.col(indices[i]);
 	dataWhiteLarge = normalize(dataWhiteLarge);
@@ -240,8 +244,8 @@ void ISA::initialize(const MatrixXd& data) {
 	// pick first basis vector at random
 	mBasis.col(0) = dataWhiteLarge.col(rand() % N);
 
-	MatrixXd innerProd;
-	MatrixXd::Index j;
+	MatrixXf innerProd;
+	MatrixXf::Index j;
 
 	for(int i = 1; i < min(numHiddens(), N); ++i) {
 		// find data point with maximal inner product to other basis vectors
@@ -251,7 +255,7 @@ void ISA::initialize(const MatrixXd& data) {
 	}
 
 	// orthogonalize and unwhiten
-	SelfAdjointEigenSolver<MatrixXd> eigenSolver2(mBasis * mBasis.transpose());
+	SelfAdjointEigenSolver<MatrixXf> eigenSolver2(mBasis * mBasis.transpose());
 	mBasis = eigenSolver1.operatorSqrt() * eigenSolver2.operatorInverseSqrt() * mBasis;
 }
 
@@ -259,13 +263,13 @@ void ISA::initialize(const MatrixXd& data) {
 
 void ISA::orthogonalize() {
 	// symmetrically orthogonalize basis
-	SelfAdjointEigenSolver<MatrixXd> eigenSolver1(mBasis * mBasis.transpose());
+	SelfAdjointEigenSolver<MatrixXf> eigenSolver1(mBasis * mBasis.transpose());
 	mBasis = eigenSolver1.operatorInverseSqrt() * mBasis;
 }
 
 
 
-void ISA::train(const MatrixXd& data, Parameters params) {
+void ISA::train(const MatrixXf& data, Parameters params) {
 	if(data.rows() != numVisibles())
 		throw Exception("Data has wrong dimensionality.");
 
@@ -299,8 +303,8 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 	}
 
 	for(int i = 0; i < params.maxIter; ++i) {
-		MatrixXd complBasis(numHiddens(), numHiddens());
-		MatrixXd complData(numHiddens(), data.cols());
+		MatrixXf complBasis(numHiddens(), numHiddens());
+		MatrixXf complData(numHiddens(), data.cols());
 
 		// sample hidden states
 		mHiddenStates = params.persistent ?
@@ -363,7 +367,7 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 
 
 
-void ISA::trainPrior(const MatrixXd& states, const Parameters& params) {
+void ISA::trainPrior(const MatrixXf& states, const Parameters& params) {
 	int from[numSubspaces()];
 	for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
 		from[i] = f;
@@ -384,21 +388,21 @@ void ISA::trainPrior(const MatrixXd& states, const Parameters& params) {
 
 
 bool ISA::trainSGD(
-	const MatrixXd& complData,
-	const MatrixXd& complBasis,
+	const MatrixXf& complData,
+	const MatrixXf& complBasis,
 	const Parameters& params)
 {
 	// LU decomposition
-	PartialPivLU<MatrixXd> basisLU(complBasis);
+	PartialPivLU<MatrixXf> basisLU(complBasis);
 
 	// filter matrix, momentum and batch
-	MatrixXd W = basisLU.inverse();
-	MatrixXd P = MatrixXd::Zero(W.rows(), W.cols());
-	MatrixXd X;
+	MatrixXf W = basisLU.inverse();
+	MatrixXf P = MatrixXf::Zero(W.rows(), W.cols());
+	MatrixXf X;
 
 	// compute value of lower bound
-	double logDet = basisLU.matrixLU().diagonal().array().abs().log().sum();
-	double energy = priorEnergy(W * complData).array().mean() + logDet;
+	float logDet = basisLU.matrixLU().diagonal().array().abs().log().sum();
+	float energy = priorEnergy(W * complData).array().mean() + logDet;
 
 	for(int i = 0; i < params.sgd.maxIter; ++i) {
 		for(int j = 0; j + params.sgd.batchSize <= complData.cols(); j += params.sgd.batchSize) {
@@ -414,11 +418,11 @@ bool ISA::trainSGD(
 	}
 
 	// compute LU decomposition from filter matrix
-	PartialPivLU<MatrixXd> filterLU(W);
+	PartialPivLU<MatrixXf> filterLU(W);
 
 	// compute new value of lower bound
-	double logDetNew = filterLU.matrixLU().diagonal().array().abs().log().sum();
-	double energyNew = priorEnergy(W * complData).array().mean() - logDetNew;
+	float logDetNew = filterLU.matrixLU().diagonal().array().abs().log().sum();
+	float energyNew = priorEnergy(W * complData).array().mean() - logDetNew;
 
 	if(params.sgd.pocket && energy < energyNew)
 		// don't update basis
@@ -433,12 +437,12 @@ bool ISA::trainSGD(
 
 
 bool ISA::trainLBFGS(
-	const MatrixXd& complData,
-	const MatrixXd& complBasis,
+	const MatrixXf& complData,
+	const MatrixXf& complBasis,
 	const Parameters& params)
 {
 	// compute initial filter matrix
-	MatrixXd W = complBasis.inverse();
+	MatrixXf W = complBasis.inverse();
 
 	// request memory for LBFGS
 	lbfgsfloatval_t* x = lbfgs_malloc(W.size());
@@ -453,7 +457,7 @@ bool ISA::trainLBFGS(
 	param.max_iterations = params.lbfgs.maxIter;
 	param.m = params.lbfgs.numGrad;
 
-	pair<ISA*, const MatrixXd*> instance(this, &complData);
+	pair<ISA*, const MatrixXf*> instance(this, &complData);
 
 	// start LBFGS optimization
 	lbfgs(W.size(), x, 0, &evaluateLBFGS, 0, &instance, &param);
@@ -472,10 +476,10 @@ bool ISA::trainLBFGS(
 
 
 
-void ISA::trainMP(const MatrixXd& data, const Parameters& params) {
+void ISA::trainMP(const MatrixXf& data, const Parameters& params) {
 	// momentum, hidden and visible states
-	MatrixXd P = MatrixXd::Zero(mBasis.rows(), mBasis.cols());
-	MatrixXd X, Y;
+	MatrixXf P = MatrixXf::Zero(mBasis.rows(), mBasis.cols());
+	MatrixXf X, Y;
 
 	mBasis = normalize(mBasis);
 
@@ -511,20 +515,20 @@ void ISA::trainMP(const MatrixXd& data, const Parameters& params) {
 		# pragma omp parallel for
 		for(int j = 0; j < numSubspaces(); ++j) {
 			// orthogonalize subspace
-			MatrixXd subsp = mBasis.middleCols(from[j], mSubspaces[j].dim());
-			SelfAdjointEigenSolver<MatrixXd> eigenSolver(subsp.transpose() * subsp);
+			MatrixXf subsp = mBasis.middleCols(from[j], mSubspaces[j].dim());
+			SelfAdjointEigenSolver<MatrixXf> eigenSolver(subsp.transpose() * subsp);
 			mBasis.middleCols(from[j], mSubspaces[j].dim()) = subsp * eigenSolver.operatorInverseSqrt();
 		}
 }
 
 
 
-MatrixXd ISA::matchingPursuit(const MatrixXd& data, const Parameters& params) {
-	MatrixXd hiddenStates = MatrixXd::Zero(numHiddens(), data.cols());
+MatrixXf ISA::matchingPursuit(const MatrixXf& data, const Parameters& params) {
+	MatrixXf hiddenStates = MatrixXf::Zero(numHiddens(), data.cols());
 
 	// assumes basis is normalized
-	MatrixXd responses = mBasis.transpose() * data;
-	MatrixXd gramMatrix = mBasis.transpose() * mBasis;
+	MatrixXf responses = mBasis.transpose() * data;
+	MatrixXf gramMatrix = mBasis.transpose() * mBasis;
 
 	if(numSubspaces() == numHiddens()) {
 		for(int i = 0; i < params.mp.numCoeff; ++i) {
@@ -535,14 +539,14 @@ MatrixXd ISA::matchingPursuit(const MatrixXd& data, const Parameters& params) {
 				responses.col(j).array().abs().maxCoeff(&idx);
 
 				// update hidden states and filter responses
-				double r = responses(idx, j);
+				float r = responses(idx, j);
 				hiddenStates(idx, j) += r;
 				responses.col(j) -= r * gramMatrix.col(idx);
 			}
 		}
 	} else {
 		// subspace responses
-		MatrixXd ssResponses = MatrixXd(numSubspaces(), data.cols());
+		MatrixXf ssResponses = MatrixXf(numSubspaces(), data.cols());
 
 		int from[numSubspaces()];
 		for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
@@ -562,8 +566,8 @@ MatrixXd ISA::matchingPursuit(const MatrixXd& data, const Parameters& params) {
 
 				for(int k = 0; k < mSubspaces[idx].dim(); ++k) {
 					// update hidden states and filter responses
-					double l = from[idx] + k;
-					double r = responses(l, j);
+					float l = from[idx] + k;
+					float r = responses(l, j);
 					hiddenStates(l, j) += r;
 					responses.col(j) -= r * gramMatrix.col(l);
 				}
@@ -576,21 +580,21 @@ MatrixXd ISA::matchingPursuit(const MatrixXd& data, const Parameters& params) {
 
 
 
-MatrixXd ISA::mergeSubspaces(MatrixXd states, const Parameters& params) {
+MatrixXf ISA::mergeSubspaces(MatrixXf states, const Parameters& params) {
 	if(numSubspaces() > 1) {
 		vector<int> from(numSubspaces());
 		for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
 			from[i] = f;
 
 		// compute subspace energies
-		MatrixXd energies(numSubspaces(), states.cols());
+		MatrixXf energies(numSubspaces(), states.cols());
 
 		#pragma omp parallel for
 		for(int i = 0; i < numSubspaces(); ++i)
 			energies.row(i) = states.middleRows(from[i], mSubspaces[i].dim()).colwise().norm();
 
 		// compute correlations between subspaces
-		MatrixXd corr = corrcoef(energies).triangularView<StrictlyLower>();
+		MatrixXf corr = corrcoef(energies).triangularView<StrictlyLower>();
 
 		for(int i = 0; i < params.merge.maxMerge; ++i) {
 			// find the two maximally correlated subspaces
@@ -608,9 +612,9 @@ MatrixXd ISA::mergeSubspaces(MatrixXd states, const Parameters& params) {
 			corr(row, col) = 0.;
 
 			// data corresponding to subspaces
-			MatrixXd statesRow = states.middleRows(from[row], mSubspaces[row].dim());
-			MatrixXd statesCol = states.middleRows(from[col], mSubspaces[col].dim());
-			MatrixXd statesJnt(mSubspaces[row].dim() + mSubspaces[col].dim(), states.cols());
+			MatrixXf statesRow = states.middleRows(from[row], mSubspaces[row].dim());
+			MatrixXf statesCol = states.middleRows(from[col], mSubspaces[col].dim());
+			MatrixXf statesJnt(mSubspaces[row].dim() + mSubspaces[col].dim(), states.cols());
 
 			statesJnt << statesRow, statesCol;
 
@@ -620,7 +624,7 @@ MatrixXd ISA::mergeSubspaces(MatrixXd states, const Parameters& params) {
 			gsm.train(statesJnt, params.merge.maxIter);
 
 			// log-likelihood improvement
-			double mi = gsm.logLikelihood(statesJnt).mean()
+			float mi = gsm.logLikelihood(statesJnt).mean()
 				- mSubspaces[row].logLikelihood(statesRow).mean()
 				- mSubspaces[col].logLikelihood(statesCol).mean();
 
@@ -635,14 +639,14 @@ MatrixXd ISA::mergeSubspaces(MatrixXd states, const Parameters& params) {
 					indices.push_back(from[col] + i);
 
 				// rearrange basis vectors
-				MatrixXd basisRow = mBasis.middleCols(from[row], mSubspaces[row].dim());
-				MatrixXd basisCol = mBasis.middleCols(from[col], mSubspaces[col].dim());
+				MatrixXf basisRow = mBasis.middleCols(from[row], mSubspaces[row].dim());
+				MatrixXf basisCol = mBasis.middleCols(from[col], mSubspaces[col].dim());
 
-				MatrixXd basisDel = deleteCols(mBasis, indices);
+				MatrixXf basisDel = deleteCols(mBasis, indices);
 				mBasis << basisDel, basisRow, basisCol;
 
 				// rearrange hidden states
-				MatrixXd statesDel = deleteRows(states, indices);
+				MatrixXf statesDel = deleteRows(states, indices);
 				states << statesDel, statesJnt;
 
 				// remove subspaces from correlation matrix
@@ -685,14 +689,14 @@ MatrixXd ISA::mergeSubspaces(MatrixXd states, const Parameters& params) {
 
 
 
-MatrixXd ISA::sample(int numSamples) {
+MatrixXf ISA::sample(int numSamples) {
 	return basis() * samplePrior(numSamples);
 }
 
 
 
-MatrixXd ISA::samplePrior(int numSamples) {
-	MatrixXd samples = MatrixXd::Zero(numHiddens(), numSamples);
+MatrixXf ISA::samplePrior(int numSamples) {
+	MatrixXf samples = MatrixXf::Zero(numHiddens(), numSamples);
 
 	// TODO: parallelize
 	for(int from = 0, i = 0; i < numSubspaces(); from += mSubspaces[i].dim(), ++i)
@@ -704,11 +708,11 @@ MatrixXd ISA::samplePrior(int numSamples) {
 
 
 
-MatrixXd ISA::sampleScales(const MatrixXd& states) {
+MatrixXf ISA::sampleScales(const MatrixXf& states) {
 	if(states.rows() != numHiddens())
 		throw Exception("Hidden states have wrong dimensionality.");
 
-	MatrixXd scales = MatrixXd::Zero(states.rows(), states.cols());
+	MatrixXf scales = MatrixXf::Zero(states.rows(), states.cols());
 
 	int from[numSubspaces()];
 	for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
@@ -724,13 +728,13 @@ MatrixXd ISA::sampleScales(const MatrixXd& states) {
 
 
 
-MatrixXd ISA::samplePosterior(const MatrixXd& data, const Parameters& params) {
+MatrixXf ISA::samplePosterior(const MatrixXf& data, const Parameters& params) {
 	return samplePosterior(data, samplePrior(data.cols()), params);
 }
 
 
 
-MatrixXd ISA::samplePosterior(const MatrixXd& data, const MatrixXd& states, const Parameters& params) {
+MatrixXf ISA::samplePosterior(const MatrixXf& data, const MatrixXf& states, const Parameters& params) {
 	if(data.rows() != numVisibles())
 		throw Exception("Data has wrong dimensionality.");
 
@@ -741,22 +745,22 @@ MatrixXd ISA::samplePosterior(const MatrixXd& data, const MatrixXd& states, cons
 		throw Exception("The number of hidden states and the number of data points should be equal.");
 
 	// scales, variances, and visible states
-	MatrixXd S, v, X;
+	MatrixXf S, v, X;
 
 	// basis and nullspace basis
-	MatrixXd& A = mBasis;
-	MatrixXd B = nullspaceBasis();
-	MatrixXd At = A.transpose();
-	MatrixXd Bt = B.transpose();
+	MatrixXf& A = mBasis;
+	MatrixXf B = nullspaceBasis();
+	MatrixXf At = A.transpose();
+	MatrixXf Bt = B.transpose();
 
 	// nullspace projection matrix
-	MatrixXd Q = Bt * B;
+	MatrixXf Q = Bt * B;
 
 	// part of the hidden representation
-	MatrixXd WX = At * (A * At).llt().solve(data);
+	MatrixXf WX = At * (A * At).llt().solve(data);
 
 	// initialize Markov chain
-	MatrixXd Y = WX + Q * states;
+	MatrixXf Y = WX + Q * states;
 
 	for(int i = 0; i < params.gibbs.numIter; ++i) {
 		// sample scales
@@ -769,7 +773,7 @@ MatrixXd ISA::samplePosterior(const MatrixXd& data, const MatrixXd& states, cons
 
 		#pragma omp parallel for
 		for(int j = 0; j < data.cols(); ++j) {
-			MatrixXd vAt = v.col(j).asDiagonal() * At;
+			MatrixXf vAt = v.col(j).asDiagonal() * At;
 			Y.col(j) = WX.col(j) + Q * (Y.col(j) + vAt * (A * vAt).llt().solve(X.col(j)));
 		}
 
@@ -782,35 +786,35 @@ MatrixXd ISA::samplePosterior(const MatrixXd& data, const MatrixXd& states, cons
 
 
 
-pair<MatrixXd, MatrixXd> ISA::samplePosteriorAIS(const MatrixXd& data, const Parameters& params) {
-	VectorXd annealingWeights = VectorXd::LinSpaced(params.ais.numIter + 1, 0.0, 1.0).bottomRows(params.ais.numIter);
+pair<MatrixXf, MatrixXf> ISA::samplePosteriorAIS(const MatrixXf& data, const Parameters& params) {
+	VectorXf annealingWeights = VectorXf::LinSpaced(params.ais.numIter + 1, 0.0, 1.0).bottomRows(params.ais.numIter);
 
 	// initialize proposal distribution to be Gaussian
 	ISA isa = *this;
 
 	for(int j = 0; j < isa.numSubspaces(); ++j)
-		isa.mSubspaces[j].setScales(VectorXd::Ones(isa.mSubspaces[j].numScales()));
+		isa.mSubspaces[j].setScales(VectorXf::Ones(isa.mSubspaces[j].numScales()));
 
 	// scales, variances, and visible states
-	MatrixXd S, v, X;
+	MatrixXf S, v, X;
 
 	// basis and nullspace basis
-	MatrixXd& A = mBasis;
-	MatrixXd B = nullspaceBasis();
-	MatrixXd At = A.transpose();
-	MatrixXd Bt = B.transpose();
+	MatrixXf& A = mBasis;
+	MatrixXf B = nullspaceBasis();
+	MatrixXf At = A.transpose();
+	MatrixXf Bt = B.transpose();
 
 	// nullspace projection matrix
-	MatrixXd Q = Bt * B;
+	MatrixXf Q = Bt * B;
 
 	// part of the hidden representation
-	MatrixXd WX = At * (A * At).llt().solve(data);
+	MatrixXf WX = At * (A * At).llt().solve(data);
 
 	// initialize hidden states
-	MatrixXd Y = WX + Q * isa.samplePrior(data.cols());
+	MatrixXf Y = WX + Q * isa.samplePrior(data.cols());
 
 	// importance weights
-	MatrixXd logWeights = (B * Y).colwise().squaredNorm().array() / 2.
+	MatrixXf logWeights = (B * Y).colwise().squaredNorm().array() / 2.
 		+ (numHiddens() - numVisibles()) * log(2. * PI) / 2. - logDetPD(A * At) / 2.;
 
 	for(int i = 0; i < params.ais.numIter; ++i) {
@@ -831,7 +835,7 @@ pair<MatrixXd, MatrixXd> ISA::samplePosteriorAIS(const MatrixXd& data, const Par
 
 		#pragma omp parallel for
 		for(int j = 0; j < data.cols(); ++j) {
-			MatrixXd vAt = v.col(j).asDiagonal() * At;
+			MatrixXf vAt = v.col(j).asDiagonal() * At;
 			Y.col(j) = WX.col(j) + Q * (Y.col(j) + vAt * (A * vAt).llt().solve(X.col(j)));
 		}
 
@@ -843,19 +847,19 @@ pair<MatrixXd, MatrixXd> ISA::samplePosteriorAIS(const MatrixXd& data, const Par
 
 	logWeights += priorLogLikelihood(Y);
 
-	return pair<MatrixXd, MatrixXd>(Y, logWeights);
+	return pair<MatrixXf, MatrixXf>(Y, logWeights);
 }
 
 
 
-MatrixXd ISA::sampleNullspace(const MatrixXd& data, const Parameters& params) {
+MatrixXf ISA::sampleNullspace(const MatrixXf& data, const Parameters& params) {
 	return nullspaceBasis() * samplePosterior(data, params);
 }
 
 
 
-MatrixXd ISA::priorLogLikelihood(const MatrixXd& states) {
-	MatrixXd logLik = MatrixXd::Zero(numSubspaces(), states.cols());
+MatrixXf ISA::priorLogLikelihood(const MatrixXf& states) {
+	MatrixXf logLik = MatrixXf::Zero(numSubspaces(), states.cols());
 
 	int from[numSubspaces()];
 	for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
@@ -871,8 +875,8 @@ MatrixXd ISA::priorLogLikelihood(const MatrixXd& states) {
 
 
 
-MatrixXd ISA::priorEnergy(const MatrixXd& states) {
-	MatrixXd energy = MatrixXd::Zero(numSubspaces(), states.cols());
+MatrixXf ISA::priorEnergy(const MatrixXf& states) {
+	MatrixXf energy = MatrixXf::Zero(numSubspaces(), states.cols());
 
 	int from[numSubspaces()];
 	for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
@@ -888,8 +892,8 @@ MatrixXd ISA::priorEnergy(const MatrixXd& states) {
 
 
 
-MatrixXd ISA::priorEnergyGradient(const MatrixXd& states) {
-	MatrixXd gradient = MatrixXd::Zero(states.rows(), states.cols());
+MatrixXf ISA::priorEnergyGradient(const MatrixXf& states) {
+	MatrixXf gradient = MatrixXf::Zero(states.rows(), states.cols());
 
 	int from[numSubspaces()];
 	for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
@@ -905,22 +909,22 @@ MatrixXd ISA::priorEnergyGradient(const MatrixXd& states) {
 
 
 
-Array<double, 1, Dynamic> ISA::logLikelihood(const MatrixXd& data) {
+Array<float, 1, Dynamic> ISA::logLikelihood(const MatrixXf& data) {
 	return logLikelihood(data, Parameters());
 }
 
 
 
-Array<double, 1, Dynamic> ISA::logLikelihood(const MatrixXd& data, const Parameters& params) {
+Array<float, 1, Dynamic> ISA::logLikelihood(const MatrixXf& data, const Parameters& params) {
 	if(data.rows() != numVisibles())
 		throw Exception("Data has wrong dimensionality.");
 
 	if(complete()) {
 		// LU decomposition
-		PartialPivLU<MatrixXd> basisLU(mBasis);
+		PartialPivLU<MatrixXf> basisLU(mBasis);
 
 		// compute log-determinant of basis
-		double logDet = basisLU.matrixLU().diagonal().array().abs().log().sum();
+		float logDet = basisLU.matrixLU().diagonal().array().abs().log().sum();
 
 		return priorLogLikelihood(basisLU.inverse() * data).array() - logDet;
 	} else {
@@ -930,8 +934,8 @@ Array<double, 1, Dynamic> ISA::logLikelihood(const MatrixXd& data, const Paramet
 
 
 
-MatrixXd ISA::sampleAIS(const MatrixXd& data, const Parameters& params) {
-	MatrixXd logWeights(params.ais.numSamples, data.cols());
+MatrixXf ISA::sampleAIS(const MatrixXf& data, const Parameters& params) {
+	MatrixXf logWeights(params.ais.numSamples, data.cols());
 
 	#pragma omp parallel for
 	for(int i = 0; i < params.ais.numSamples; ++i)
@@ -942,6 +946,6 @@ MatrixXd ISA::sampleAIS(const MatrixXd& data, const Parameters& params) {
 
 
 
-double ISA::evaluate(const MatrixXd& data, const Parameters& params) {
+float ISA::evaluate(const MatrixXf& data, const Parameters& params) {
 	return -logLikelihood(data, params).mean() / log(2.) / dim();
 }

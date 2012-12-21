@@ -17,36 +17,36 @@ class GSM : public Distribution {
 		inline int dim();
 		inline int numScales();
 
-		inline ArrayXd scales();
-		inline void setScales(MatrixXd scales);
+		inline ArrayXf scales();
+		inline void setScales(MatrixXf scales);
 
-		inline double variance();
+		inline float variance();
 		inline void normalize();
 
-		virtual bool train(const MatrixXd& data, int maxIter = 100, double tol = 1e-5);
+		virtual bool train(const MatrixXf& data, int maxIter = 100, double tol = 1e-5);
 
-		virtual MatrixXd sample(int numSamples = 1);
+		virtual MatrixXf sample(int numSamples = 1);
 
-		virtual Array<double, 1, Dynamic> samplePosterior(const MatrixXd& data);
+		virtual Array<float, 1, Dynamic> samplePosterior(const MatrixXf& data);
 
-		virtual ArrayXXd posterior(const MatrixXd& data);
-		virtual ArrayXXd posterior(const MatrixXd& data, const RowVectorXd& sqNorms);
+		virtual ArrayXXf posterior(const MatrixXf& data);
+		virtual ArrayXXf posterior(const MatrixXf& data, const RowVectorXf& sqNorms);
 
-		virtual ArrayXXd logJoint(const MatrixXd& data);
-		virtual ArrayXXd logJoint(const MatrixXd& data, const RowVectorXd& sqNorms);
+		virtual ArrayXXf logJoint(const MatrixXf& data);
+		virtual ArrayXXf logJoint(const MatrixXf& data, const RowVectorXf& sqNorms);
 
-		virtual Array<double, 1, Dynamic> logLikelihood(const MatrixXd& data);
-		virtual Array<double, 1, Dynamic> logLikelihood(const MatrixXd& data, const RowVectorXd& sqNorms);
+		virtual Array<float, 1, Dynamic> logLikelihood(const MatrixXf& data);
+		virtual Array<float, 1, Dynamic> logLikelihood(const MatrixXf& data, const RowVectorXf& sqNorms);
 
-		virtual Array<double, 1, Dynamic> energy(const MatrixXd& data);
-		virtual Array<double, 1, Dynamic> energy(const MatrixXd& data, const RowVectorXd& sqNorms);
+		virtual Array<float, 1, Dynamic> energy(const MatrixXf& data);
+		virtual Array<float, 1, Dynamic> energy(const MatrixXf& data, const RowVectorXf& sqNorms);
 
-		virtual ArrayXXd energyGradient(const MatrixXd& data);
+		virtual ArrayXXf energyGradient(const MatrixXf& data);
 
 	protected:
 		int mDim;
 		int mNumScales;
-		ArrayXd mScales;
+		ArrayXf mScales;
 };
 
 
@@ -63,13 +63,13 @@ inline int GSM::numScales() {
 
 
 
-inline ArrayXd GSM::scales() {
+inline ArrayXf GSM::scales() {
 	return mScales;
 }
 
 
 
-inline double GSM::variance() {
+inline float GSM::variance() {
 	return mScales.square().mean();
 }
 
@@ -81,7 +81,7 @@ inline void GSM::normalize() {
 
 
 
-inline void GSM::setScales(MatrixXd scales) {
+inline void GSM::setScales(MatrixXf scales) {
 	// turn row vector into column vector
 	if(scales.cols() > scales.rows())
 		scales.transposeInPlace();

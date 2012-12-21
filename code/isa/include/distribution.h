@@ -10,8 +10,8 @@ class Distribution {
 		virtual ~Distribution();
 
 		virtual int dim() = 0;
-		virtual Array<double, 1, Dynamic> logLikelihood(const MatrixXd& data) = 0;
-		virtual double evaluate(const MatrixXd& data);
+		virtual Array<float, 1, Dynamic> logLikelihood(const MatrixXf& data) = 0;
+		virtual float evaluate(const MatrixXf& data);
 };
 
 #endif

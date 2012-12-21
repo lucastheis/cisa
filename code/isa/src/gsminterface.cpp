@@ -56,7 +56,7 @@ PyObject* GSM_num_scales(GSMObject* self, PyObject*, void*) {
 
 
 PyObject* GSM_scales(GSMObject* self, PyObject*, void*) {
-	PyObject* array = PyArray_FromMatrixXd(self->gsm->scales());
+	PyObject* array = PyArray_FromMatrixXf(self->gsm->scales());
 
 	// make array immutable
 	reinterpret_cast<PyArrayObject*>(array)->flags &= ~NPY_WRITEABLE;
@@ -67,7 +67,7 @@ PyObject* GSM_scales(GSMObject* self, PyObject*, void*) {
 
 
 int GSM_set_scales(GSMObject* self, PyObject* value, void*) {
-	PyObject* array = PyArray_FROM_OTF(value, NPY_DOUBLE, NPY_IN_ARRAY);
+	PyObject* array = PyArray_FROM_OTF(value, NPY_FLOAT, NPY_IN_ARRAY);
 
 	if(!array) {
 		PyErr_SetString(PyExc_TypeError, "Scales should be of type `ndarray`.");
@@ -75,7 +75,7 @@ int GSM_set_scales(GSMObject* self, PyObject* value, void*) {
 	}
 
 	try {
-		self->gsm->setScales(PyArray_ToMatrixXd(array));
+		self->gsm->setScales(PyArray_ToMatrixXf(array));
 
 	} catch(Exception exception) {
 		Py_DECREF(array);
@@ -133,7 +133,7 @@ PyObject* GSM_train(GSMObject* self, PyObject* args, PyObject* kwds) {
 	}
 
 	try {
-		if(self->gsm->train(PyArray_ToMatrixXd(data), max_iter, tol)) {
+		if(self->gsm->train(PyArray_ToMatrixXf(data), max_iter, tol)) {
 			Py_INCREF(Py_True);
 			return Py_True;
 		} else {
@@ -166,7 +166,7 @@ PyObject* GSM_posterior(GSMObject* self, PyObject* args, PyObject* kwds) {
 	}
 
 	try {
-		return PyArray_FromMatrixXd(self->gsm->posterior(PyArray_ToMatrixXd(data)));
+		return PyArray_FromMatrixXf(self->gsm->posterior(PyArray_ToMatrixXf(data)));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
@@ -184,7 +184,7 @@ PyObject* GSM_sample(GSMObject* self, PyObject* args, PyObject* kwds) {
 		return 0;
 
 	try {
-		return PyArray_FromMatrixXd(self->gsm->sample(num_samples));
+		return PyArray_FromMatrixXf(self->gsm->sample(num_samples));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
@@ -209,7 +209,7 @@ PyObject* GSM_sample_posterior(GSMObject* self, PyObject* args, PyObject* kwds) 
 	}
 
 	try {
-		return PyArray_FromMatrixXd(self->gsm->samplePosterior(PyArray_ToMatrixXd(data)));
+		return PyArray_FromMatrixXf(self->gsm->samplePosterior(PyArray_ToMatrixXf(data)));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
@@ -234,7 +234,7 @@ PyObject* GSM_loglikelihood(GSMObject* self, PyObject* args, PyObject* kwds) {
 	}
 
 	try {
-		return PyArray_FromMatrixXd(self->gsm->logLikelihood(PyArray_ToMatrixXd(data)));
+		return PyArray_FromMatrixXf(self->gsm->logLikelihood(PyArray_ToMatrixXf(data)));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
@@ -259,7 +259,7 @@ PyObject* GSM_energy(GSMObject* self, PyObject* args, PyObject* kwds) {
 	}
 
 	try {
-		return PyArray_FromMatrixXd(self->gsm->energy(PyArray_ToMatrixXd(data)));
+		return PyArray_FromMatrixXf(self->gsm->energy(PyArray_ToMatrixXf(data)));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
@@ -284,7 +284,7 @@ PyObject* GSM_energy_gradient(GSMObject* self, PyObject* args, PyObject* kwds) {
 	}
 
 	try {
-		return PyArray_FromMatrixXd(self->gsm->energyGradient(PyArray_ToMatrixXd(data)));
+		return PyArray_FromMatrixXf(self->gsm->energyGradient(PyArray_ToMatrixXf(data)));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
@@ -316,7 +316,7 @@ PyObject* GSM_setstate(GSMObject* self, PyObject* state, PyObject*) {
 		return 0;
 
 	try {
-		self->gsm->setScales(PyArray_ToMatrixXd(scales));
+		self->gsm->setScales(PyArray_ToMatrixXf(scales));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;

@@ -26,7 +26,7 @@ Go to `./code/liblbfgs` and execute the following:
 
 	./autogen.sh
 	./configure --enable-sse2
-	make CFLAGS="-fPIC"
+	make CFLAGS="-fPIC -msse"
 
 Once the L-BFGS library is compiled, go back to the root directory and execute:
 

@@ -413,7 +413,7 @@ PyObject* ISA_num_hiddens(ISAObject* self, PyObject*, void*) {
 
 
 PyObject* ISA_A(ISAObject* self, PyObject*, void*) {
-	PyObject* array = PyArray_FromMatrixXd(self->isa->basis());
+	PyObject* array = PyArray_FromMatrixXf(self->isa->basis());
 
 	// make array immutable
 	reinterpret_cast<PyArrayObject*>(array)->flags &= ~NPY_WRITEABLE;
@@ -430,7 +430,7 @@ int ISA_set_A(ISAObject* self, PyObject* value, void*) {
 	}
 
 	try {
-		self->isa->setBasis(PyArray_ToMatrixXd(value));
+		self->isa->setBasis(PyArray_ToMatrixXf(value));
 
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
@@ -444,7 +444,7 @@ int ISA_set_A(ISAObject* self, PyObject* value, void*) {
 
 PyObject* ISA_basis(ISAObject* self, PyObject*, PyObject*) {
 	try {
-		return PyArray_FromMatrixXd(self->isa->basis());
+		return PyArray_FromMatrixXf(self->isa->basis());
 
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
@@ -471,7 +471,7 @@ PyObject* ISA_set_basis(ISAObject* self, PyObject* args, PyObject* kwds) {
 	}
 
 	try {
-		self->isa->setBasis(PyArray_ToMatrixXd(basis));
+		self->isa->setBasis(PyArray_ToMatrixXf(basis));
 
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
@@ -486,7 +486,7 @@ PyObject* ISA_set_basis(ISAObject* self, PyObject* args, PyObject* kwds) {
 
 PyObject* ISA_nullspace_basis(ISAObject* self, PyObject* args, PyObject* kwds) {
 	try {
-		return PyArray_FromMatrixXd(self->isa->nullspaceBasis());
+		return PyArray_FromMatrixXf(self->isa->nullspaceBasis());
 
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
@@ -500,7 +500,7 @@ PyObject* ISA_nullspace_basis(ISAObject* self, PyObject* args, PyObject* kwds) {
 
 PyObject* ISA_hidden_states(ISAObject* self, PyObject*, PyObject*) {
 	try {
-		return PyArray_FromMatrixXd(self->isa->hiddenStates());
+		return PyArray_FromMatrixXf(self->isa->hiddenStates());
 
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
@@ -527,7 +527,7 @@ PyObject* ISA_set_hidden_states(ISAObject* self, PyObject* args, PyObject* kwds)
 	}
 
 	try {
-		self->isa->setHiddenStates(PyArray_ToMatrixXd(states));
+		self->isa->setHiddenStates(PyArray_ToMatrixXf(states));
 
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
@@ -744,7 +744,7 @@ PyObject* ISA_initialize(ISAObject* self, PyObject* args, PyObject* kwds) {
 	try {
 		self->isa->initialize();
 		if(data)
-			self->isa->initialize(PyArray_ToMatrixXd(data));
+			self->isa->initialize(PyArray_ToMatrixXf(data));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
@@ -780,7 +780,7 @@ PyObject* ISA_train(ISAObject* self, PyObject* args, PyObject* kwds) {
 	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", const_cast<char**>(kwlist), &data, &parameters))
 		return 0;
 
-	data = PyArray_FROM_OTF(data, NPY_DOUBLE, NPY_F_CONTIGUOUS | NPY_ALIGNED);
+	data = PyArray_FROM_OTF(data, NPY_FLOAT, NPY_F_CONTIGUOUS | NPY_ALIGNED);
 
 	// make sure data is stored in NumPy array
 	if(!data) {
@@ -792,7 +792,7 @@ PyObject* ISA_train(ISAObject* self, PyObject* args, PyObject* kwds) {
 		ISA::Parameters params = PyObject_ToParameters(self, parameters);
 			
 		// fit model to training data
-		self->isa->train(PyArray_ToMatrixXd(data), params);
+		self->isa->train(PyArray_ToMatrixXf(data), params);
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		Py_DECREF(data);
@@ -815,7 +815,7 @@ PyObject* ISA_sample(ISAObject* self, PyObject* args, PyObject* kwds) {
 		return 0;
 
 	try {
-		return PyArray_FromMatrixXd(self->isa->sample(num_samples));
+		return PyArray_FromMatrixXf(self->isa->sample(num_samples));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
@@ -835,7 +835,7 @@ PyObject* ISA_sample_prior(ISAObject* self, PyObject* args, PyObject* kwds) {
 		return 0;
 
 	try {
- 		return PyArray_FromMatrixXd(self->isa->samplePrior(num_samples));
+ 		return PyArray_FromMatrixXf(self->isa->samplePrior(num_samples));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
@@ -856,7 +856,7 @@ PyObject* ISA_sample_nullspace(ISAObject* self, PyObject* args, PyObject* kwds) 
 	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", const_cast<char**>(kwlist), &data, &parameters))
 		return 0;
 
-	data = PyArray_FROM_OTF(data, NPY_DOUBLE, NPY_F_CONTIGUOUS | NPY_ALIGNED);
+	data = PyArray_FROM_OTF(data, NPY_FLOAT, NPY_F_CONTIGUOUS | NPY_ALIGNED);
 
 	// make sure data is stored in NumPy array
 	if(!data) {
@@ -865,8 +865,8 @@ PyObject* ISA_sample_nullspace(ISAObject* self, PyObject* args, PyObject* kwds) 
 	}
 
 	try {
-		PyObject* samples = PyArray_FromMatrixXd(self->isa->sampleNullspace(
-			PyArray_ToMatrixXd(data),
+		PyObject* samples = PyArray_FromMatrixXf(self->isa->sampleNullspace(
+			PyArray_ToMatrixXf(data),
 			PyObject_ToParameters(self, parameters)));
 		Py_DECREF(data);
 		return samples;
@@ -893,7 +893,7 @@ PyObject* ISA_sample_posterior(ISAObject* self, PyObject* args, PyObject* kwds) 
 	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|OO", const_cast<char**>(kwlist), &data, &parameters, &hidden_states))
 		return 0;
 
-	data = PyArray_FROM_OTF(data, NPY_DOUBLE, NPY_F_CONTIGUOUS | NPY_ALIGNED);
+	data = PyArray_FROM_OTF(data, NPY_FLOAT, NPY_F_CONTIGUOUS | NPY_ALIGNED);
 
 	// make sure data is stored in NumPy array
 	if(!data) {
@@ -902,7 +902,7 @@ PyObject* ISA_sample_posterior(ISAObject* self, PyObject* args, PyObject* kwds) 
 	}
 
 	if(hidden_states) {
-		hidden_states = PyArray_FROM_OTF(hidden_states, NPY_DOUBLE, NPY_F_CONTIGUOUS | NPY_ALIGNED);
+		hidden_states = PyArray_FROM_OTF(hidden_states, NPY_FLOAT, NPY_F_CONTIGUOUS | NPY_ALIGNED);
 
 		if(!hidden_states) {
 			PyErr_SetString(PyExc_TypeError, "Hidden states have to be stored in a NumPy array.");
@@ -914,13 +914,13 @@ PyObject* ISA_sample_posterior(ISAObject* self, PyObject* args, PyObject* kwds) 
 	try {
 		PyObject* samples;
 		if(hidden_states)
-			samples = PyArray_FromMatrixXd(self->isa->samplePosterior(
-				PyArray_ToMatrixXd(data),
-				PyArray_ToMatrixXd(hidden_states),
+			samples = PyArray_FromMatrixXf(self->isa->samplePosterior(
+				PyArray_ToMatrixXf(data),
+				PyArray_ToMatrixXf(hidden_states),
 				PyObject_ToParameters(self, parameters)));
 		else
-			samples = PyArray_FromMatrixXd(self->isa->samplePosterior(
-				PyArray_ToMatrixXd(data),
+			samples = PyArray_FromMatrixXf(self->isa->samplePosterior(
+				PyArray_ToMatrixXf(data),
 				PyObject_ToParameters(self, parameters)));
 		Py_DECREF(data);
 		Py_XDECREF(hidden_states);
@@ -950,7 +950,7 @@ PyObject* ISA_sample_posterior_ais(ISAObject* self, PyObject* args, PyObject* kw
 		return 0;
 
 	// make sure data is stored in contiguous NumPy array
-	data = PyArray_FROM_OTF(data, NPY_DOUBLE, NPY_F_CONTIGUOUS | NPY_ALIGNED);
+	data = PyArray_FROM_OTF(data, NPY_FLOAT, NPY_F_CONTIGUOUS | NPY_ALIGNED);
 
 	if(!data) {
 		PyErr_SetString(PyExc_TypeError, "Data has to be stored in a NumPy array.");
@@ -960,10 +960,10 @@ PyObject* ISA_sample_posterior_ais(ISAObject* self, PyObject* args, PyObject* kw
 	try {
 		ISA::Parameters params = PyObject_ToParameters(self, parameters);
 
-		pair<MatrixXd, MatrixXd> result = self->isa->samplePosteriorAIS(PyArray_ToMatrixXd(data), params);
+		pair<MatrixXf, MatrixXf> result = self->isa->samplePosteriorAIS(PyArray_ToMatrixXf(data), params);
 
-		PyObject* samples = PyArray_FromMatrixXd(result.first);
-		PyObject* logWeights = PyArray_FromMatrixXd(result.second);
+		PyObject* samples = PyArray_FromMatrixXf(result.first);
+		PyObject* logWeights = PyArray_FromMatrixXf(result.second);
 
 		PyObject* tuple = Py_BuildValue("(OO)", samples, logWeights);
 
@@ -995,7 +995,7 @@ PyObject* ISA_sample_ais(ISAObject* self, PyObject* args, PyObject* kwds) {
 		return 0;
 
 	// make sure data is stored in contiguous NumPy array
-	data = PyArray_FROM_OTF(data, NPY_DOUBLE, NPY_F_CONTIGUOUS | NPY_ALIGNED);
+	data = PyArray_FROM_OTF(data, NPY_FLOAT, NPY_F_CONTIGUOUS | NPY_ALIGNED);
 
 	if(!data) {
 		PyErr_SetString(PyExc_TypeError, "Data has to be stored in a NumPy array.");
@@ -1003,8 +1003,8 @@ PyObject* ISA_sample_ais(ISAObject* self, PyObject* args, PyObject* kwds) {
 	}
 
 	try {
-		PyObject* samples = PyArray_FromMatrixXd(self->isa->sampleAIS(
-			PyArray_ToMatrixXd(data),
+		PyObject* samples = PyArray_FromMatrixXf(self->isa->sampleAIS(
+			PyArray_ToMatrixXf(data),
 			PyObject_ToParameters(self, parameters)));
 		Py_DECREF(data);
 		return samples;
@@ -1034,7 +1034,7 @@ PyObject* ISA_sample_scales(ISAObject* self, PyObject* args, PyObject* kwds) {
 	}
 
 	try {
-		return PyArray_FromMatrixXd(self->isa->sampleScales(PyArray_ToMatrixXd(states)));
+		return PyArray_FromMatrixXf(self->isa->sampleScales(PyArray_ToMatrixXf(states)));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
@@ -1062,8 +1062,8 @@ PyObject* ISA_matching_pursuit(ISAObject* self, PyObject* args, PyObject* kwds) 
 	}
 
 	try {
-		return PyArray_FromMatrixXd(self->isa->matchingPursuit(
-			PyArray_ToMatrixXd(data),
+		return PyArray_FromMatrixXf(self->isa->matchingPursuit(
+			PyArray_ToMatrixXf(data),
 			PyObject_ToParameters(self, parameters)));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
@@ -1091,7 +1091,7 @@ PyObject* ISA_prior_energy(ISAObject* self, PyObject* args, PyObject* kwds) {
 	}
 
 	try {
-		return PyArray_FromMatrixXd(self->isa->priorEnergy(PyArray_ToMatrixXd(states)));
+		return PyArray_FromMatrixXf(self->isa->priorEnergy(PyArray_ToMatrixXf(states)));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
@@ -1118,7 +1118,7 @@ PyObject* ISA_prior_energy_gradient(ISAObject* self, PyObject* args, PyObject* k
 	}
 
 	try {
-		return PyArray_FromMatrixXd(self->isa->priorEnergyGradient(PyArray_ToMatrixXd(states)));
+		return PyArray_FromMatrixXf(self->isa->priorEnergyGradient(PyArray_ToMatrixXf(states)));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
@@ -1145,7 +1145,7 @@ PyObject* ISA_prior_loglikelihood(ISAObject* self, PyObject* args, PyObject* kwd
 	}
 
 	try {
-		return PyArray_FromMatrixXd(self->isa->priorLogLikelihood(PyArray_ToMatrixXd(states)));
+		return PyArray_FromMatrixXf(self->isa->priorLogLikelihood(PyArray_ToMatrixXf(states)));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
 		return 0;
@@ -1175,12 +1175,12 @@ PyObject* ISA_loglikelihood(ISAObject* self, PyObject* args, PyObject* kwds) {
 
 	try {
 		if(!self->isa->complete() && return_all)
-			return PyArray_FromMatrixXd(self->isa->sampleAIS(
-				PyArray_ToMatrixXd(data),
+			return PyArray_FromMatrixXf(self->isa->sampleAIS(
+				PyArray_ToMatrixXf(data),
 				PyObject_ToParameters(self, parameters)));
 		else
-			return PyArray_FromMatrixXd(self->isa->logLikelihood(
-				PyArray_ToMatrixXd(data),
+			return PyArray_FromMatrixXf(self->isa->logLikelihood(
+				PyArray_ToMatrixXf(data),
 				PyObject_ToParameters(self, parameters)));
 
 	} catch(Exception exception) {
@@ -1211,7 +1211,7 @@ PyObject* ISA_evaluate(ISAObject* self, PyObject* args, PyObject* kwds) {
 
 	try {
 		return PyFloat_FromDouble(self->isa->evaluate(
-			PyArray_ToMatrixXd(data),
+			PyArray_ToMatrixXf(data),
 			PyObject_ToParameters(self, parameters)));
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());

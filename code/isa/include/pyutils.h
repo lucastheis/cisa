@@ -10,7 +10,7 @@
 
 using namespace Eigen;
 
-PyObject* PyArray_FromMatrixXd(const MatrixXd& mat);
-MatrixXd PyArray_ToMatrixXd(PyObject* array);
+PyObject* PyArray_FromMatrixXf(const MatrixXf& mat);
+MatrixXf PyArray_ToMatrixXf(PyObject* array);
 
 #endif

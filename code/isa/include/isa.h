@@ -101,66 +101,66 @@ class ISA : public Distribution {
 		inline vector<GSM> subspaces();
 		inline void setSubspaces(vector<GSM> subspaces);
 
-		inline MatrixXd basis();
-		inline void setBasis(const MatrixXd& basis);
+		inline MatrixXf basis();
+		inline void setBasis(const MatrixXf& basis);
 
-		inline MatrixXd hiddenStates();
-		inline void setHiddenStates(const MatrixXd& hiddenStates);
+		inline MatrixXf hiddenStates();
+		inline void setHiddenStates(const MatrixXf& hiddenStates);
 
-		virtual MatrixXd nullspaceBasis();
+		virtual MatrixXf nullspaceBasis();
 
 		virtual void initialize();
-		virtual void initialize(const MatrixXd& data);
+		virtual void initialize(const MatrixXf& data);
 
 		virtual void orthogonalize();
 
-		virtual void train(const MatrixXd& data, Parameters params = Parameters());
+		virtual void train(const MatrixXf& data, Parameters params = Parameters());
 		virtual void trainPrior(
-			const MatrixXd& states,
+			const MatrixXf& states,
 			const Parameters& params = Parameters());
 		virtual bool trainSGD(
-			const MatrixXd& complData,
-			const MatrixXd& complBasis,
+			const MatrixXf& complData,
+			const MatrixXf& complBasis,
 			const Parameters& params = Parameters());
 		virtual bool trainLBFGS(
-			const MatrixXd& complData,
-			const MatrixXd& complBasis,
+			const MatrixXf& complData,
+			const MatrixXf& complBasis,
 			const Parameters& params = Parameters());
 		virtual void trainMP(
-			const MatrixXd& data,
+			const MatrixXf& data,
 			const Parameters& params = Parameters());
-		virtual MatrixXd mergeSubspaces(MatrixXd states, const Parameters& params = Parameters());
+		virtual MatrixXf mergeSubspaces(MatrixXf states, const Parameters& params = Parameters());
 
-		virtual MatrixXd sample(int numSamples = 1);
-		virtual MatrixXd samplePrior(int numSamples = 1);
-		virtual MatrixXd sampleScales(const MatrixXd& states);
-		virtual MatrixXd samplePosterior(
-			const MatrixXd& data,
-			const MatrixXd& states,
+		virtual MatrixXf sample(int numSamples = 1);
+		virtual MatrixXf samplePrior(int numSamples = 1);
+		virtual MatrixXf sampleScales(const MatrixXf& states);
+		virtual MatrixXf samplePosterior(
+			const MatrixXf& data,
+			const MatrixXf& states,
 			const Parameters& params = Parameters());
-		virtual pair<MatrixXd, MatrixXd> samplePosteriorAIS(
-			const MatrixXd& data,
+		virtual pair<MatrixXf, MatrixXf> samplePosteriorAIS(
+			const MatrixXf& data,
 			const Parameters& params = Parameters());
-		virtual MatrixXd samplePosterior(const MatrixXd& data, const Parameters& params = Parameters());
-		virtual MatrixXd sampleNullspace(const MatrixXd& data, const Parameters& params = Parameters());
-		virtual MatrixXd sampleAIS(const MatrixXd& data, const Parameters& params = Parameters());
+		virtual MatrixXf samplePosterior(const MatrixXf& data, const Parameters& params = Parameters());
+		virtual MatrixXf sampleNullspace(const MatrixXf& data, const Parameters& params = Parameters());
+		virtual MatrixXf sampleAIS(const MatrixXf& data, const Parameters& params = Parameters());
 
-		virtual MatrixXd matchingPursuit(const MatrixXd& data, const Parameters& params = Parameters());
+		virtual MatrixXf matchingPursuit(const MatrixXf& data, const Parameters& params = Parameters());
 
-		virtual MatrixXd priorLogLikelihood(const MatrixXd& states);
-		virtual MatrixXd priorEnergy(const MatrixXd& states);
-		virtual MatrixXd priorEnergyGradient(const MatrixXd& states);
+		virtual MatrixXf priorLogLikelihood(const MatrixXf& states);
+		virtual MatrixXf priorEnergy(const MatrixXf& states);
+		virtual MatrixXf priorEnergyGradient(const MatrixXf& states);
 
-		virtual Array<double, 1, Dynamic> logLikelihood(const MatrixXd& data);
-		virtual Array<double, 1, Dynamic> logLikelihood(const MatrixXd& data, const Parameters& params);
-		virtual double evaluate(const MatrixXd& data, const Parameters& params = Parameters());
+		virtual Array<float, 1, Dynamic> logLikelihood(const MatrixXf& data);
+		virtual Array<float, 1, Dynamic> logLikelihood(const MatrixXf& data, const Parameters& params);
+		virtual float evaluate(const MatrixXf& data, const Parameters& params = Parameters());
 
 	protected:
 		int mNumVisibles;
 		int mNumHiddens;
-		MatrixXd mBasis;
+		MatrixXf mBasis;
 		vector<GSM> mSubspaces;
-		MatrixXd mHiddenStates;
+		MatrixXf mHiddenStates;
 };
 
 
@@ -213,13 +213,13 @@ inline void ISA::setSubspaces(vector<GSM> subspaces) {
 
 
 
-inline MatrixXd ISA::basis() {
+inline MatrixXf ISA::basis() {
 	return mBasis;
 }
 
 
 
-inline void ISA::setBasis(const MatrixXd& basis) {
+inline void ISA::setBasis(const MatrixXf& basis) {
 	if(basis.rows() != numVisibles() && basis.cols() != numHiddens())
 		throw Exception("Basis has wrong dimensionality.");
 
@@ -228,13 +228,13 @@ inline void ISA::setBasis(const MatrixXd& basis) {
 
 
 
-inline MatrixXd ISA::hiddenStates() {
+inline MatrixXf ISA::hiddenStates() {
 	return mHiddenStates;
 }
 
 
 
-inline void ISA::setHiddenStates(const MatrixXd& hiddenStates) {
+inline void ISA::setHiddenStates(const MatrixXf& hiddenStates) {
 	mHiddenStates = hiddenStates;
 }
 
