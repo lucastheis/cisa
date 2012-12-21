@@ -116,4 +116,4 @@ parameters = isa.default_parameters()
 ## Reference
 
 L. Theis, J. Sohl-Dickstein, and M. Bethge, *Training sparse natural image models with a fast Gibbs
-sampler of an extended state space*, Advances in Neural Information Processing Systems 26, 2013
+sampler of an extended state space*, Advances in Neural Information Processing Systems 25, 2012
