@@ -68,6 +68,7 @@ modules = [
 			'code/liblbfgs/lib/.libs/liblbfgs.a'],
 		extra_compile_args=[
 			'-O2',
+			'-msse2',
 			'-fopenmp',
 			'-Wno-parentheses',
 			'-Wno-write-strings'] + extra_compile_args)]
@@ -77,7 +78,7 @@ CCompiler.compile = parallelCCompiler
 
 setup(
 	name='isa',
-	version='0.3.3',
+	version='0.4.0',
 	author='Lucas Theis',
 	author_email='lucas@theis.io',
 	description='A C++ implementation of overcomplete ISA.',
