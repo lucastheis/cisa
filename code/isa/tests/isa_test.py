@@ -62,8 +62,8 @@ class Tests(unittest.TestCase):
 			eigvals, eigvecs = eig(mat)
 
 			# eliminate eigenvectors whose eigenvalues are zero
-			eigvecs = eigvecs[:, eigvals > 0]
-			eigvals = eigvals[eigvals > 0]
+			eigvecs = eigvecs[:, eigvals > 0.]
+			eigvals = eigvals[eigvals > 0.]
 
 			# inverse square root
 			return dot(eigvecs, dot(diag(1. / sqrt(eigvals)), eigvecs.T))

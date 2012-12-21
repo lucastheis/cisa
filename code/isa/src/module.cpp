@@ -9,8 +9,6 @@
 #include "gsminterface.h"
 #include "Eigen/Core"
 
-#pragma GCC diagnostic ignored "-Wwrite-strings"
-
 static PyGetSetDef ISA_getset[] = {
 	{"dim", (getter)ISA_dim, 0, 0},
 	{"num_visibles", (getter)ISA_num_visibles, 0, 0},

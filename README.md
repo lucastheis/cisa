@@ -31,6 +31,7 @@ Go to `./code/liblbfgs` and execute the following:
 Once the L-BFGS library is compiled, go back to the root directory and execute:
 
 	python setup.py build
+	python setup.py install
 
 ### Mac OS X
 
@@ -50,6 +51,21 @@ Next, go to `./code/liblbfgs` and execute the following:
 Once the L-BFGS library is compiled, go back to the root directory and execute:
 
 	python setup.py build
+	python setup.py install
+
+### Building with the Intel compiler and MKL
+
+To get even better performance, you might want to try compiling the module with Intel's compiler and
+the MKL libraries. This probably requires some changes of the paths in `setup.py`. After that, use
+the following line to compile the code
+
+	python setup.py build --compiler=intelem
+
+on 64-bit systems and
+
+	python setup.py build --compiler=intel
+
+on 32-bit systems.
 
 ## Example
 
