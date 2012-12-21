@@ -77,7 +77,7 @@ CCompiler.compile = parallelCCompiler
 
 setup(
 	name='isa',
-	version='0.3.2',
+	version='0.3.3',
 	author='Lucas Theis',
 	author_email='lucas@theis.io',
 	description='A C++ implementation of overcomplete ISA.',
