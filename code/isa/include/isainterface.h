@@ -15,6 +15,31 @@ struct ISAObject {
 
 extern PyTypeObject ISA_type;
 
+extern const char* ISA_basis_doc;
+extern const char* ISA_set_basis_doc;
+extern const char* ISA_nullspace_basis_doc;
+extern const char* ISA_hidden_states_doc;
+extern const char* ISA_set_hidden_states_doc;
+extern const char* ISA_subspaces_doc;
+extern const char* ISA_set_subspaces_doc;
+extern const char* ISA_default_parameters_doc;
+extern const char* ISA_initialize_doc;
+extern const char* ISA_orthogonalize_doc;
+extern const char* ISA_train_doc;
+extern const char* ISA_sample_doc;
+extern const char* ISA_sample_prior_doc;
+extern const char* ISA_sample_nullspace_doc;
+extern const char* ISA_sample_posterior_doc;
+extern const char* ISA_sample_posterior_ais_doc;
+extern const char* ISA_sample_ais_doc;
+extern const char* ISA_sample_scales_doc;
+extern const char* ISA_matching_pursuit_doc;
+extern const char* ISA_prior_energy_doc;
+extern const char* ISA_prior_energy_gradient_doc;
+extern const char* ISA_prior_loglikelihood_doc;
+extern const char* ISA_loglikelihood_doc;
+extern const char* ISA_evaluate_doc;
+
 ISA::Parameters PyObject_ToParameters(ISAObject*, PyObject* parameters);
 
 PyObject* ISA_new(PyTypeObject* type, PyObject*, PyObject*);

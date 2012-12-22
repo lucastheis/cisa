@@ -442,6 +442,13 @@ int ISA_set_A(ISAObject* self, PyObject* value, void*) {
 
 
 
+const char* ISA_basis_doc =
+	"Returns the current basis of the model. Each column corresponds to one basis\n"
+	"vector and one hidden unit.\n"
+	"\n"
+	"@rtype: C{ndarray}\n"
+	"@return: the current basis";
+
 PyObject* ISA_basis(ISAObject* self, PyObject*, PyObject*) {
 	try {
 		return PyArray_FromMatrixXd(self->isa->basis());
@@ -455,6 +462,13 @@ PyObject* ISA_basis(ISAObject* self, PyObject*, PyObject*) {
 }
 
 
+const char* ISA_set_basis_doc =
+	"Replaces the basis vectors of the model. The number of columns should correspond\n"
+	"to the number of hidden units, the number of rows to the number of visible\n"
+	"units.\n"
+	"\n"
+	"@type  basis: C{ndarray}\n"
+	"@param basis: the basis vectors stored in columns";
 
 PyObject* ISA_set_basis(ISAObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"basis", 0};
@@ -484,6 +498,13 @@ PyObject* ISA_set_basis(ISAObject* self, PyObject* args, PyObject* kwds) {
 
 
 
+const char* ISA_nullspace_basis_doc =
+	"Computes a basis spanning the nullspace of the basis matrix. That is, the column\n"
+	"vectors of the returned matrix will be orthogonal to the basis vectors.\n"
+	"\n"
+	"@rtype: C{ndarray}\n"
+	"@return: a basis for the nullspace of the basis matrix";
+
 PyObject* ISA_nullspace_basis(ISAObject* self, PyObject* args, PyObject* kwds) {
 	try {
 		return PyArray_FromMatrixXd(self->isa->nullspaceBasis());
@@ -497,6 +518,14 @@ PyObject* ISA_nullspace_basis(ISAObject* self, PyObject* args, PyObject* kwds) {
 }
 
 
+const char* ISA_hidden_states_doc =
+	"Returns the current state of the persistent Markov chain used for training. The\n"
+	"number of columns of the returned matrix corresponds to the number of data points\n"
+	"used during the last training run with persistent EM. The number of rows corresponds\n"
+	"to the number of hidden units.\n"
+	"\n"
+	"@rtype: C{ndarray}\n"
+	"@return: the states of the persistent Markov chain";
 
 PyObject* ISA_hidden_states(ISAObject* self, PyObject*, PyObject*) {
 	try {
@@ -511,6 +540,14 @@ PyObject* ISA_hidden_states(ISAObject* self, PyObject*, PyObject*) {
 }
 
 
+
+const char* ISA_set_hidden_states_doc =
+	"Can be used to set the state of the persistent Markov chain. The number of columns\n"
+	"should correspond to the number of data points that will be used for training, the.\n"
+	"number of rows should correspond to the number of hidden units.\n"
+	"\n"
+	"@type  states: C{ndarray}\n"
+	"@param states: new states for the persistent Markov chain over hidden units";
 
 PyObject* ISA_set_hidden_states(ISAObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"states", 0};
@@ -540,6 +577,13 @@ PyObject* ISA_set_hidden_states(ISAObject* self, PyObject* args, PyObject* kwds)
 
 
 
+const char* ISA_subspaces_doc =
+	"Returns a list of L{GSM} objects which model the distributions over hidden units\n"
+	"within each subspace.\n"
+	"\n"
+	"rtype: C{list}\n"
+	"return: a list of Gaussian scale mixture distributions";
+
 PyObject* ISA_subspaces(ISAObject* self, PyObject*, PyObject*) {
 	vector<GSM> subspaces = self->isa->subspaces();
 
@@ -557,6 +601,15 @@ PyObject* ISA_subspaces(ISAObject* self, PyObject*, PyObject*) {
 }
 
 
+
+const char* ISA_set_subspaces_doc =
+	"Can be used to modify the distribution over hidden units. The given list should\n"
+	"contain one L{GSM} for each subspace. The dimensionality of each subspace can be\n"
+	"chosen arbitrarily, but the dimensionalities of all subspaces should add up to\n"
+	"the number of hidden units.\n"
+	"\n"
+	"type  subspaces: C{list}\n"
+	"param subspaces: a list of Gaussian scale mixture distributions";
 
 PyObject* ISA_set_subspaces(ISAObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"subspaces", 0};
@@ -598,6 +651,11 @@ PyObject* ISA_set_subspaces(ISAObject* self, PyObject* args, PyObject* kwds) {
 }
 
 
+const char* ISA_default_parameters_doc =
+	"Returns a dictionary of default parameters.\n"
+	"\n"
+	"@rtype: C{dict}\n"
+	"@return: default parameters";
 
 PyObject* ISA_default_parameters(ISAObject* self) {
 	ISA::Parameters params;
@@ -726,6 +784,15 @@ PyObject* ISA_default_parameters(ISAObject* self) {
 
 
 
+const char* ISA_initialize_doc =
+	"Initializes the parameters of the model. The distributions over hidden units\n"
+	"are initialized to approximate the Laplace distribution if the subspaces are\n"
+	"one-dimensional. If data points are given, the basis vectors are additionally\n"
+	"using a heuristic.\n"
+	"\n"
+	"@type  data: C{ndarray}\n"
+	"@param data: a set of data points (optional)";
+
 PyObject* ISA_initialize(ISAObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"data", 0};
 
@@ -756,6 +823,9 @@ PyObject* ISA_initialize(ISAObject* self, PyObject* args, PyObject* kwds) {
 
 
 
+const char* ISA_orthogonalize_doc =
+	"Symmetrically orthogonalizes the basis vectors.\n";
+
 PyObject* ISA_orthogonalize(ISAObject* self, PyObject* args, PyObject* kwds) {
 	try {
 		self->isa->orthogonalize();
@@ -769,6 +839,24 @@ PyObject* ISA_orthogonalize(ISAObject* self, PyObject* args, PyObject* kwds) {
 }
 
 
+
+const char* ISA_train_doc =
+	"Trains the parameters of the model.\n"
+	"\n"
+	"By default, the model will be trained using a Monte Carlo variant of expectation\n"
+	"maximization with either stochastic gradient descent (SGD) or limited-memory BFGS\n"
+	"(LBFGS) in each M-step. If C{train_prior} is C{True}, also the distributions over\n"
+	"hidden units will be adjusted. Alternatively, C{matching_pursuit} can be used to\n"
+	"optimize the basis vectors.\n"
+	"\n"
+	"Which method is used is determined by the C{training_method} entry of the dictionary\n"
+	"C{parameters} (either 'MP', 'SGD' or 'LBFGS').\n"
+	"\n"
+	"@type  data: C{ndarray}\n"
+	"@param data: data points stored in columns\n"
+	"\n"
+	"@type  parameters: C{dict}\n"
+	"@param parameters: parameters controlling the training method (optional)";
 
 PyObject* ISA_train(ISAObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"data", "parameters", 0};
@@ -806,6 +894,15 @@ PyObject* ISA_train(ISAObject* self, PyObject* args, PyObject* kwds) {
 
 
 
+const char* ISA_sample_doc =
+	"Draws samples from the model.\n"
+	"\n"
+	"@type  num_samples: C{int}\n"
+	"@param num_samples: the number of samples to draw\n"
+	"\n"
+	"@rtype: C{ndarray}\n"
+	"@return: samples from the model";
+
 PyObject* ISA_sample(ISAObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"num_samples", 0};
 
@@ -826,6 +923,15 @@ PyObject* ISA_sample(ISAObject* self, PyObject* args, PyObject* kwds) {
 
 
 
+const char* ISA_sample_prior_doc =
+	"Draws samples from the prior distribution over hidden units.\n"
+	"\n"
+	"@type  num_samples: C{int}\n"
+	"@param num_samples: the number of samples to draw\n"
+	"\n"
+	"@rtype: C{ndarray}\n"
+	"@return: samples from the prior over hidden units";
+
 PyObject* ISA_sample_prior(ISAObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"num_samples", 0};
 
@@ -845,6 +951,19 @@ PyObject* ISA_sample_prior(ISAObject* self, PyObject* args, PyObject* kwds) {
 }
 
 
+
+const char* ISA_sample_nullspace_doc =
+	"Draws samples from the posterior distribution over the nullspace representation\n"
+	"of the hidden states using Gibbs sampling or some other method.\n"
+	"\n"
+	"@type  data: C{ndarray}\n"
+	"@param data: states of the visible units\n"
+	"\n"
+	"@type  parameters: C{dict}\n"
+	"@param parameters: parameters controlling the sampling method (optional)\n"
+	"\n"
+	"@rtype: C{ndarray}\n"
+	"@return: samples from the posterior over nullspace states";
 
 PyObject* ISA_sample_nullspace(ISAObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"data", "parameters", 0};
@@ -881,6 +1000,21 @@ PyObject* ISA_sample_nullspace(ISAObject* self, PyObject* args, PyObject* kwds) 
 }
 
 
+const char* ISA_sample_posterior_doc =
+	"Draws samples from the posterior distribution over hidden units using Gibbs\n"
+	"sampling or some other method. For each data point, one sample is generated.\n"
+	"\n"
+	"@type  data: C{ndarray}\n"
+	"@param data: states of the visible units\n"
+	"\n"
+	"@type  parameters: C{dict}\n"
+	"@param parameters: parameters controlling the sampling method (optional)\n"
+	"\n"
+	"@type  hidden_states: C{ndarray}\n"
+	"@param hidden_states: initial states for the Markov chain of the sampler (optional)\n"
+	"\n"
+	"@rtype: C{ndarray}\n"
+	"@return: samples from the posterior distribution over hidden units";
 
 PyObject* ISA_sample_posterior(ISAObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"data", "parameters", "hidden_states", 0};
@@ -939,6 +1073,19 @@ PyObject* ISA_sample_posterior(ISAObject* self, PyObject* args, PyObject* kwds) 
 
 
 
+const char* ISA_sample_posterior_ais_doc =
+	"Draws samples from the posterior and generates corresponding importance weights\n"
+	"using annealed importance sampling (AIS).\n"
+	"\n"
+	"@type  data: C{ndarray}\n"
+	"@param data: states of the visible units\n"
+	"\n"
+	"@type  parameters: C{dict}\n"
+	"@param parameters: parameters controlling the sampling method (optional)\n"
+	"\n"
+	"@rtype: C{tuple}\n"
+	"@return: samples and log importance weights";
+
 PyObject* ISA_sample_posterior_ais(ISAObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"data", "parameters", 0};
 
@@ -984,6 +1131,19 @@ PyObject* ISA_sample_posterior_ais(ISAObject* self, PyObject* args, PyObject* kw
 
 
 
+const char* ISA_sample_ais_doc =
+	"Like L{sample_posterior_ais}, but only returns the logarithm of the importance\n"
+	"weights and not the sampled hidden units.\n"
+	"\n"
+	"@type  data: C{ndarray}\n"
+	"@param data: states of the visible units\n"
+	"\n"
+	"@type  parameters: C{dict}\n"
+	"@param parameters: parameters controlling the sampling method (optional)\n"
+	"\n"
+	"@rtype: C{ndarray}\n"
+	"@return: log importance weights";
+
 PyObject* ISA_sample_ais(ISAObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"data", "parameters", 0};
 
@@ -1018,6 +1178,16 @@ PyObject* ISA_sample_ais(ISAObject* self, PyObject* args, PyObject* kwds) {
 
 
 
+const char* ISA_sample_scales_doc =
+	"Samples precisions from the posterior distribution of the Gaussian scale mixtures\n"
+	"given states for the hidden units.\n"
+	"\n"
+	"@type  states: C{ndarray}\n"
+	"@param states: states of the hidden units\n"
+	"\n"
+	"@rtype: C{ndarray}\n"
+	"@return: precision variables";
+
 PyObject* ISA_sample_scales(ISAObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"states", 0};
 
@@ -1044,6 +1214,20 @@ PyObject* ISA_sample_scales(ISAObject* self, PyObject* args, PyObject* kwds) {
 }
 
 
+
+const char* ISA_matching_pursuit_doc =
+	"Tries to infer the state of the hidden units using matching pursuit. Here, the\n"
+	"number of active coefficients is fixed and can be controlled by setting\n"
+	"C{num_coeff} in the parameters.\n"
+	"\n"
+	"@type  data: C{ndarray}\n"
+	"@param data: states of the visible units\n"
+	"\n"
+	"@type  parameters: C{dict}\n"
+	"@param parameters: parameters controlling the number of active coefficients (optional)\n"
+	"\n"
+	"@rtype: C{ndarray}\n"
+	"@return: inferred states of the hidden units";
 
 PyObject* ISA_matching_pursuit(ISAObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"data", "parameters", 0};
@@ -1074,6 +1258,14 @@ PyObject* ISA_matching_pursuit(ISAObject* self, PyObject* args, PyObject* kwds) 
 }
 
 
+const char* ISA_prior_energy_doc =
+	"Computes the negative logarithm of the unnormalized density of hidden states.\n"
+	"\n"
+	"@type  states: C{ndarray}\n"
+	"@param states: states of the hidden units\n"
+	"\n"
+	"@rtype: C{ndarray}\n"
+	"@return: energies of the hidden unit states";
 
 PyObject* ISA_prior_energy(ISAObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"states", 0};
@@ -1101,6 +1293,14 @@ PyObject* ISA_prior_energy(ISAObject* self, PyObject* args, PyObject* kwds) {
 }
 
 
+const char* ISA_prior_energy_gradient_doc =
+	"Computes the gradient of the energy of hidden states.\n"
+	"\n"
+	"@type  states: C{ndarray}\n"
+	"@param states: states of the hidden units\n"
+	"\n"
+	"@rtype: C{ndarray}\n"
+	"@return: energy gradients of the hidden unit states";
 
 PyObject* ISA_prior_energy_gradient(ISAObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"states", 0};
@@ -1129,6 +1329,15 @@ PyObject* ISA_prior_energy_gradient(ISAObject* self, PyObject* args, PyObject* k
 
 
 
+const char* ISA_prior_loglikelihood_doc =
+	"Computes the logarithm of the normalized density of hidden states.\n"
+	"\n"
+	"@type  states: C{ndarray}\n"
+	"@param states: states of the hidden units\n"
+	"\n"
+	"@rtype: C{ndarray}\n"
+	"@return: density evaluated at the given states for the hidden units";
+
 PyObject* ISA_prior_loglikelihood(ISAObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"states", 0};
 
@@ -1155,6 +1364,25 @@ PyObject* ISA_prior_loglikelihood(ISAObject* self, PyObject* args, PyObject* kwd
 }
 
 
+
+const char* ISA_loglikelihood_doc =
+	"Estimates the density of data points under the model using annealed importance\n"
+	"sampling (AIS). This estimator will tend to underestimate the log-likelihood if\n"
+	"the parameters are not chosen well enough.\n"
+	"\n"
+	"If C{return_all} is C{True}, all importance weights are returned instead of averaging them.\n"
+	"\n"
+	"@type  data: C{ndarray}\n"
+	"@param data: states of the visible units\n"
+	"\n"
+	"@type  parameters: C{dict}\n"
+	"@param parameters: parameters controlling AIS (optional)\n"
+	"\n"
+	"@type  return_all: C{bool}\n"
+	"@param return_all: return one estimate for each AIS sample (default: False)\n"
+	"\n"
+	"@rtype: C{ndarray}\n"
+	"@return: logarithm of the estimated density of the given data points";
 
 PyObject* ISA_loglikelihood(ISAObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"data", "parameters", "return_all", 0};
@@ -1192,6 +1420,19 @@ PyObject* ISA_loglikelihood(ISAObject* self, PyObject* args, PyObject* kwds) {
 }
 
 
+const char* ISA_evaluate_doc =
+	"Estimates the average log-likelihood for a given set of data points using annealed\n"
+	"importance sampling (AIS). This estimator will tend to underestimate the\n"
+	"log-likelihood if the parameters are not chosen well enough.\n"
+	"\n"
+	"@type  data: C{ndarray}\n"
+	"@param data: states of the visible units\n"
+	"\n"
+	"@type  parameters: C{dict}\n"
+	"@param parameters: parameters controlling AIS (optional)\n"
+	"\n"
+	"@rtype: C{float}\n"
+	"@return: the estimated average log-likelihood";
 
 PyObject* ISA_evaluate(ISAObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"data", "parameters", 0};
