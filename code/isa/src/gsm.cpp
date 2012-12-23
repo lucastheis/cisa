@@ -66,10 +66,9 @@ Array<float, 1, Dynamic> GSM::samplePosterior(const MatrixXf& data) {
 	for(int j = 0; j < post.cols(); ++j) {
 		int i = 0;
 		float urand = static_cast<float>(rand()) / (static_cast<long>(RAND_MAX) + 1l);
-		float cdf;
 
 		// compute index
-		for(cdf = post(0, j); cdf < urand; cdf += post(i, j))
+		for(float cdf = post(0, j); cdf < urand && i + 1 < post.rows(); cdf += post(i, j))
 			++i;
 
 		scales[j] = mScales[i];
