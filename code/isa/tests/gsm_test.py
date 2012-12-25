@@ -6,10 +6,9 @@ sys.path.append('./build/lib.macosx-10.6-intel-2.7')
 sys.path.append('./build/lib.linux-x86_64-2.7')
 
 from isa import GSM
-from numpy import asarray, isnan, any, sqrt, sum, square, std
+from numpy import asarray, isnan, any, sqrt, sum, square, std, zeros_like
 from numpy.random import randn, rand
 from scipy.stats import kstest, norm, laplace, cauchy
-from scipy.optimize import check_grad
 from pickle import dump, load
 from tempfile import mkstemp
 
@@ -33,7 +32,7 @@ class Tests(unittest.TestCase):
 
 	def test_train(self):
 		gsm = GSM(1, 10)
-		gsm.train(laplace.rvs(size=[1, 10000]), max_iter=100, tol=-1)
+		gsm.train(asarray(laplace.rvs(size=[1, 10000]), dtype='float32'), max_iter=100, tol=-1)
 
 		p = kstest(gsm.sample(10000).flatten(), laplace.cdf)[1]
 
@@ -41,7 +40,7 @@ class Tests(unittest.TestCase):
 		self.assertTrue(p > 0.0001)
 
 		gsm = GSM(1, 6)
-		gsm.train(cauchy.rvs(size=[1, 10000]), max_iter=100, tol=-1)
+		gsm.train(asarray(cauchy.rvs(size=[1, 10000]), dtype='float32'), max_iter=100, tol=-1)
 
 		# test for stability of training
 		self.assertTrue(not any(isnan(gsm.scales)))
@@ -50,7 +49,7 @@ class Tests(unittest.TestCase):
 
 	def test_posterior(self):
 		gsm = GSM(1, 10)
-		gsm.train(laplace.rvs(size=[1, 10000]), max_iter=100, tol=-1)
+		gsm.train(asarray(laplace.rvs(size=[1, 10000]), dtype='float32'), max_iter=100, tol=-1)
 
 		samples = gsm.sample(100)
 		posterior = gsm.posterior(samples)
@@ -62,8 +61,23 @@ class Tests(unittest.TestCase):
 
 
 	def test_energy_gradient(self):
+		def check_grad(f, df, x, h=1e-4):
+			x0 = x.copy()
+			x1 = x.copy()
+			g = zeros_like(x)
+
+			for i in range(x.size):
+				x0 = x.copy()
+				x1 = x.copy()
+				x0[i] = x[i] - h
+				x1[i] = x[i] + h
+				g[i] = (f(x1) - f(x0)) / (2. * h)
+
+			return sqrt(sum(square(g - df(x))))
+
 		gsm = GSM(2, 10)
-		gsm.train(randn(2, 10000) * laplace.rvs(size=[1, 10000]), max_iter=100, tol=-1)
+		gsm.train(asarray(randn(2, 10000) * laplace.rvs(size=[1, 10000]), dtype='float32'),
+			max_iter=100, tol=-1)
 
 		samples = gsm.sample(100)
 		gradient = gsm.energy_gradient(samples)
@@ -72,20 +86,20 @@ class Tests(unittest.TestCase):
 		self.assertEqual(gradient.shape[0], samples.shape[0])
 		self.assertEqual(gradient.shape[1], samples.shape[1])
 
-		f = lambda x: gsm.energy(x.reshape(-1, 1)).flatten()
-		df = lambda x: gsm.energy_gradient(x.reshape(-1, 1)).flatten()
+		f = lambda x: gsm.energy(asarray(x.reshape(-1, 1), dtype='float32')).flatten()
+		df = lambda x: gsm.energy_gradient(asarray(x.reshape(-1, 1), dtype='float32')).flatten()
 
 		for i in range(samples.shape[1]):
 			relative_error = check_grad(f, df, samples[:, i]) / sqrt(sum(square(df(samples[:, i]))))
 
 			# comparison with numerical gradient
-			self.assertLess(relative_error, 0.001)
+			self.assertLess(relative_error, 0.01)
 
 
 
 	def test_normalize(self):
 		gsm = GSM(1, 5)
-		gsm.scales = rand(gsm.num_scales) + 1.
+		gsm.scales = asarray(rand(gsm.num_scales), dtype='float32') + 1.
 		gsm.normalize()
 
 		# variance should be 1 after normalization

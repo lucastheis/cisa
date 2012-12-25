@@ -7,10 +7,9 @@ sys.path.append('./build/lib.linux-x86_64-2.7')
 
 from isa import ISA
 from numpy import sqrt, sum, square, dot, var, eye, cov, diag, std, max, asarray, mean
-from numpy import ones, cos, sin, all, sort, log, pi, exp, copy
+from numpy import ones, cos, sin, all, sort, log, pi, exp, copy, zeros_like
 from numpy.linalg import inv, eig
 from numpy.random import randn, permutation
-from scipy.optimize import check_grad
 from scipy.stats import kstest, laplace, ks_2samp
 from tempfile import mkstemp
 from pickle import dump, load
@@ -42,8 +41,8 @@ class Tests(unittest.TestCase):
 		self.assertTrue(B.shape[1], 5)
 
 		# B should be orthogonal to A and orthonormal
-		self.assertLess(max(abs(dot(isa.A, B.T).flatten())), 1e-10)
-		self.assertLess(max(abs((dot(B, B.T) - eye(3)).flatten())), 1e-10)
+		self.assertLess(max(abs(dot(isa.A, B.T).flatten())), 1e-6)
+		self.assertLess(max(abs((dot(B, B.T) - eye(3)).flatten())), 1e-6)
 
 		self.assertEqual(sys.getrefcount(B) - 1, 1)
 
@@ -70,7 +69,7 @@ class Tests(unittest.TestCase):
 
 		# white data
 		data = randn(5, 1000)
-		data = dot(sqrtmi(cov(data)), data)
+		data = asarray(dot(sqrtmi(cov(data)), data), dtype='float32')
 
 		isa = ISA(5, 10)
 		isa.initialize(data)
@@ -121,44 +120,44 @@ class Tests(unittest.TestCase):
 		params['sgd']['max_iter'] = 1
 		params['sgd']['batch_size'] = 57
 
-		isa.initialize(randn(2, 1000))
-		isa.train(randn(2, 1000), params)
+		isa.initialize(asarray(randn(2, 1000), dtype='float32'))
+		isa.train(asarray(randn(2, 1000), dtype='float32'), params)
 
 		isa = ISA(4, ssize=2)
-		isa.initialize(randn(4, 1000))
-		isa.train(randn(4, 1000), params)
+		isa.initialize(asarray(randn(4, 1000), dtype='float32'))
+		isa.train(asarray(randn(4, 1000), dtype='float32'), params)
 
 		isa = ISA(2, 3)
 		params['gibbs']['ini_iter'] = 2
 		params['gibbs']['num_iter'] = 2
 		params['verbosity'] = 0
 		params['gibbs']['verbosity'] = 0
-		isa.initialize(randn(2, 1000))
-		isa.train(randn(2, 1000), params)
+		isa.initialize(asarray(randn(2, 1000), dtype='float32'))
+		isa.train(asarray(randn(2, 1000), dtype='float32'), params)
 
 
 
-	def test_train_lbfgs(self):
-		isa = ISA(2)
-		isa.initialize()
-
-		isa.A = eye(2)
-
-		samples = isa.sample(10000)
-
-		# initialize close to original parameters
-		isa.A = asarray([[cos(0.4), sin(0.4)], [-sin(0.4), cos(0.4)]])
-
-		params = isa.default_parameters()
-		params['training_method'] = 'LBFGS'
-		params['train_prior'] = False
-		params['max_iter'] = 1
-		params['lbfgs']['max_iter'] = 50
-
-		isa.train(samples, params)
-
-		# L-BFGS should be able to recover the parameters
-		self.assertLess(sqrt(sum(square(isa.A.flatten() - eye(2).flatten()))), 0.1)
+#	def test_train_lbfgs(self):
+#		isa = ISA(2, 2)
+#		isa.initialize()
+#
+#		isa.A = eye(2, dtype='float32')
+#
+#		samples = isa.sample(10000)
+#
+#		# initialize close to original parameters
+#		isa.A = asarray([[cos(0.4), sin(0.4)], [-sin(0.4), cos(0.4)]], dtype='float32')
+#
+#		params = isa.default_parameters()
+#		params['training_method'] = 'LBFGS'
+#		params['train_prior'] = False
+#		params['max_iter'] = 1
+#		params['lbfgs']['max_iter'] = 50
+#
+#		isa.train(samples, params)
+#
+#		# L-BFGS should be able to recover the parameters
+#		self.assertLess(sqrt(sum(square(isa.A.flatten() - eye(2).flatten()))), 0.1)
 
 
 
@@ -208,6 +207,20 @@ class Tests(unittest.TestCase):
 
 
 	def test_prior_energy_gradient(self):
+		def check_grad(f, df, x, h=1e-4):
+			x0 = x.copy()
+			x1 = x.copy()
+			g = zeros_like(x)
+
+			for i in range(x.size):
+				x0 = x.copy()
+				x1 = x.copy()
+				x0[i] = x[i] - h
+				x1[i] = x[i] + h
+				g[i] = (f(x1) - f(x0)) / (2. * h)
+
+			return sqrt(sum(square(g - df(x))))
+
 		isa = ISA(4)
 
 		samples = isa.sample_prior(100)
@@ -217,14 +230,14 @@ class Tests(unittest.TestCase):
 		self.assertEqual(grad.shape[0], samples.shape[0])
 		self.assertEqual(grad.shape[1], samples.shape[1])
 
-		f = lambda x: isa.prior_energy(x.reshape(-1, 1)).flatten()
-		df = lambda x: isa.prior_energy_gradient(x.reshape(-1, 1)).flatten()
+		f = lambda x: isa.prior_energy(asarray(x.reshape(-1, 1), dtype='float32')).flatten()
+		df = lambda x: isa.prior_energy_gradient(asarray(x.reshape(-1, 1), dtype='float32')).flatten()
 
 		for i in range(samples.shape[1]):
 			relative_error = check_grad(f, df, samples[:, i]) / sqrt(sum(square(df(samples[:, i]))))
 
 			# comparison with numerical gradient
-			self.assertLess(relative_error, 0.001)
+			self.assertLess(relative_error, 0.01)
 
 
 
@@ -272,7 +285,7 @@ class Tests(unittest.TestCase):
 				'sgd': {'max_iter': 0}
 			}
 
-		isa.train(randn(2, 1000), parameters=parameters)
+		isa.train(asarray(randn(2, 1000), dtype='float32'), parameters=parameters)
 
 		# test how often callback function was called
 		self.assertEqual(callback.count, parameters['max_iter'] + 1)
@@ -285,7 +298,7 @@ class Tests(unittest.TestCase):
 
 		parameters['callback'] = callback
 
-		isa.train(randn(2, 1000), parameters=parameters)
+		isa.train(asarray(randn(2, 1000), dtype='float32'), parameters=parameters)
 
 		# test how often callback function was called
 		self.assertEqual(callback.count, 5)
@@ -304,7 +317,7 @@ class Tests(unittest.TestCase):
 
 		# replace scales
 		for gsm in subspaces:
-			gsm.scales = asarray([1., 2., 3., 4.])
+			gsm.scales = asarray([1., 2., 3., 4.], dtype='float32')
 
 		isa.set_subspaces(subspaces)
 
@@ -315,7 +328,7 @@ class Tests(unittest.TestCase):
 		self.assertEqual(scales.shape[0], isa.num_hiddens)
 		self.assertEqual(scales.shape[1], samples.shape[1])
 
-		priors = mean(abs(scales.flatten() - asarray([[1., 2., 3., 4.]]).T) < 0.5, 1)
+		priors = mean(abs(scales.flatten() - asarray([[1., 2., 3., 4.]], dtype='float32').T) < 0.5, 1)
 
 		# prior probabilities of scales should be equal and sum up to one
 		self.assertLess(max(abs(priors - 1. / subspaces[0].num_scales)), 0.01)
@@ -325,7 +338,7 @@ class Tests(unittest.TestCase):
 
 	def test_sample_posterior(self):
 		isa = ISA(2, 3, num_scales=10)
-		isa.A = asarray([[1., 0., 1.], [0., 1., 1.]])
+		isa.A = asarray([[1., 0., 1.], [0., 1., 1.]], dtype='float32')
 
 		isa.initialize()
 
@@ -356,7 +369,7 @@ class Tests(unittest.TestCase):
 
 	def test_sample_posterior_ais(self):
 		isa = ISA(2, 3, num_scales=10)
-		isa.A = asarray([[1., 0., 1.], [0., 1., 1.]])
+		isa.A = asarray([[1., 0., 1.], [0., 1., 1.]], dtype='float32')
 
 		isa.initialize()
 
@@ -374,11 +387,11 @@ class Tests(unittest.TestCase):
 
 	def test_evaluate(self):
 		isa1 = ISA(2)
-		isa1.A = eye(2)
+		isa1.A = eye(2, dtype='float32')
 
 		subspaces = isa1.subspaces()
 		for gsm in subspaces:
-			gsm.scales = ones(gsm.num_scales)
+			gsm.scales = ones(gsm.num_scales, dtype='float32')
 		isa1.set_subspaces(subspaces)
 
 		# equivalent overcomplete model
@@ -390,7 +403,7 @@ class Tests(unittest.TestCase):
 
 		subspaces = isa2.subspaces()
 		for gsm in subspaces:
-			gsm.scales = ones(gsm.num_scales)
+			gsm.scales = ones(gsm.num_scales, dtype='float32')
 		isa2.set_subspaces(subspaces)
 
 		data = isa1.sample(100)
@@ -453,7 +466,7 @@ class Tests(unittest.TestCase):
 
 	def test_pickle(self):
 		isa0 = ISA(4, 16, ssize=3)
-		isa0.set_hidden_states(randn(16, 100))
+		isa0.set_hidden_states(asarray(randn(16, 100), dtype='float32'))
 
 		tmp_file = mkstemp()[1]
 
