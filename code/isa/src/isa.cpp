@@ -14,7 +14,7 @@
 using namespace std;
 
 #if LBFGS_FLOAT != 32
-#error "liblbfgs needs to be compiled with single precision."
+#error "libLBFGS needs to be compiled with single precision."
 #endif
 
 static lbfgsfloatval_t evaluateLBFGS(void* instance, const lbfgsfloatval_t* x, lbfgsfloatval_t* g, int, lbfgsfloatval_t) {
@@ -311,9 +311,15 @@ void ISA::train(const MatrixXf& data, Parameters params) {
 			samplePosterior(data, mHiddenStates, params) :
 			samplePosterior(data, params);
 
-		// completed basis and data
-		complBasis << basis(), nullspaceBasis();
-		complData << data, nullspaceBasis() * mHiddenStates;
+		// complete basis and data
+		if(numHiddens() > numVisibles()) {
+			complBasis << basis(), nullspaceBasis();
+			complData << data, nullspaceBasis() * mHiddenStates;
+		} else {
+			// TODO: unnecessary copy
+			complBasis << basis();
+			complData << data;
+		}
 
 		if(params.trainPrior)
 			// optimize marginal distributions
