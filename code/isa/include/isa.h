@@ -220,7 +220,7 @@ inline MatrixXf ISA::basis() {
 
 
 inline void ISA::setBasis(const MatrixXf& basis) {
-	if(basis.rows() != numVisibles() && basis.cols() != numHiddens())
+	if(basis.rows() != numVisibles() || basis.cols() != numHiddens())
 		throw Exception("Basis has wrong dimensionality.");
 
 	mBasis = basis;
