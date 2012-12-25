@@ -15,6 +15,7 @@ struct ISAObject {
 
 extern PyTypeObject ISA_type;
 
+extern const char* ISA_doc;
 extern const char* ISA_basis_doc;
 extern const char* ISA_set_basis_doc;
 extern const char* ISA_nullspace_basis_doc;

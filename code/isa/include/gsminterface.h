@@ -16,6 +16,17 @@ struct GSMObject {
 
 extern PyTypeObject GSM_type;
 
+extern const char* GSM_doc;
+extern const char* GSM_variance_doc;
+extern const char* GSM_normalize_doc;
+extern const char* GSM_train_doc;
+extern const char* GSM_posterior_doc;
+extern const char* GSM_sample_doc;
+extern const char* GSM_sample_posterior_doc;
+extern const char* GSM_loglikelihood_doc;
+extern const char* GSM_energy_doc;
+extern const char* GSM_energy_gradient_doc;
+
 PyObject* GSM_new(PyTypeObject*, PyObject*, PyObject*);
 int GSM_init(GSMObject*, PyObject*, PyObject*);
 void GSM_dealloc(GSMObject*);

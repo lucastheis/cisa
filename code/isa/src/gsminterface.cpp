@@ -4,6 +4,11 @@
 
 using namespace Eigen;
 
+const char* GSM_doc =
+	"A finite Gaussian scale mixture distribution.";
+
+
+
 PyObject* GSM_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
 	PyObject* self = type->tp_alloc(type, 0);
 
@@ -90,6 +95,12 @@ int GSM_set_scales(GSMObject* self, PyObject* value, void*) {
 
 
 
+const char* GSM_variance_doc =
+	"Computes the variance of the distribution.\n"
+	"\n"
+	"@rtype: C{float}\n"
+	"@return: the variance of the distribution";
+
 PyObject* GSM_variance(GSMObject* self, PyObject*, PyObject*) {
 	try {
 		return PyFloat_FromDouble(self->gsm->variance());
@@ -100,6 +111,9 @@ PyObject* GSM_variance(GSMObject* self, PyObject*, PyObject*) {
 }
 
 
+
+const char* GSM_normalize_doc =
+	"Normalizes the variance without changing the shape of the distribution.";
 
 PyObject* GSM_normalize(GSMObject* self, PyObject*, PyObject*) {
 	try {
@@ -114,6 +128,18 @@ PyObject* GSM_normalize(GSMObject* self, PyObject*, PyObject*) {
 }
 
 
+
+const char* GSM_train_doc =
+	"Optimizes the parameters of the distribution using expectation maximization.\n"
+	"\n"
+	"@type  data: C{ndarray}\n"
+	"@param data: data points stored in columns\n"
+	"\n"
+	"@type  max_iter: C{int}\n"
+	"@param max_iter: maximum number of EM iterations (default: 100)\n"
+	"\n"
+	"@type  tol: C{float}\n"
+	"@param tol: stop if improvement in log-likelihood is smaller than C{tol} (default: 1e-5)";
 
 PyObject* GSM_train(GSMObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"data", "max_iter", "tol", 0};
@@ -150,6 +176,12 @@ PyObject* GSM_train(GSMObject* self, PyObject* args, PyObject* kwds) {
 
 
 
+const char* GSM_posterior_doc =
+	"Computes the posterior over standard deviations.\n"
+	"\n"
+	"@type  data: C{ndarray}\n"
+	"@param data: data points stored in columns";
+
 PyObject* GSM_posterior(GSMObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"data", 0};
 
@@ -175,6 +207,12 @@ PyObject* GSM_posterior(GSMObject* self, PyObject* args, PyObject* kwds) {
 
 
 
+const char* GSM_sample_doc =
+	"Generates samples from the distribution.\n"
+	"\n"
+	"@type  num_samples: C{int}\n"
+	"@param num_samples: number of samples to generate";
+
 PyObject* GSM_sample(GSMObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"num_samples", 0};
 
@@ -192,6 +230,12 @@ PyObject* GSM_sample(GSMObject* self, PyObject* args, PyObject* kwds) {
 }
 
 
+
+const char* GSM_sample_posterior_doc =
+	"Generates samples from the the posterior distribution over standard deviations.\n"
+	"\n"
+	"@type  data: C{ndarray}\n"
+	"@param data: data points stored in columns";
 
 PyObject* GSM_sample_posterior(GSMObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"data", 0};
@@ -218,6 +262,12 @@ PyObject* GSM_sample_posterior(GSMObject* self, PyObject* args, PyObject* kwds) 
 
 
 
+const char* GSM_loglikelihood_doc =
+	"Computes the log-density of data points.\n"
+	"\n"
+	"@type  data: C{ndarray}\n"
+	"@param data: data points stored in columns";
+
 PyObject* GSM_loglikelihood(GSMObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"data", 0};
 
@@ -243,6 +293,12 @@ PyObject* GSM_loglikelihood(GSMObject* self, PyObject* args, PyObject* kwds) {
 
 
 
+const char* GSM_energy_doc =
+	"Computes a negative unnormalized log-density of data points.\n"
+	"\n"
+	"@type  data: C{ndarray}\n"
+	"@param data: data points stored in columns";
+
 PyObject* GSM_energy(GSMObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"data", 0};
 
@@ -267,6 +323,12 @@ PyObject* GSM_energy(GSMObject* self, PyObject* args, PyObject* kwds) {
 }
 
 
+
+const char* GSM_energy_gradient_doc =
+	"Computes the gradient of the energy.\n"
+	"\n"
+	"@type  data: C{ndarray}\n"
+	"@param data: data points stored in columns";
 
 PyObject* GSM_energy_gradient(GSMObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"data", 0};

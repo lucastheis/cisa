@@ -8,6 +8,14 @@
 
 using namespace Eigen;
 
+const char* ISA_doc =
+	"An implementation of the probabilistic model underlying overcomplete independent\n"
+	"subspace analysis.\n"
+	"\n"
+	"B{References:}\n"
+	"\t- L. Theis, J. Sohl-Dickstein, and M. Bethge, I{Training sparse natural image\n"
+	"\tmodels with a fast Gibbs sampler of an extended state space}, NIPS 2012.";
+
 ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 	ISA::Parameters params;
 
@@ -1179,14 +1187,14 @@ PyObject* ISA_sample_ais(ISAObject* self, PyObject* args, PyObject* kwds) {
 
 
 const char* ISA_sample_scales_doc =
-	"Samples precisions from the posterior distribution of the Gaussian scale mixtures\n"
-	"given states for the hidden units.\n"
+	"Samples standard deviations from the posterior distribution of the Gaussian scale\n"
+	"mixtures given states for the hidden units.\n"
 	"\n"
 	"@type  states: C{ndarray}\n"
 	"@param states: states of the hidden units\n"
 	"\n"
 	"@rtype: C{ndarray}\n"
-	"@return: precision variables";
+	"@return: standard deviations";
 
 PyObject* ISA_sample_scales(ISAObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"states", 0};

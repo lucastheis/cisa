@@ -73,7 +73,7 @@ PyTypeObject ISA_type = {
 	0,                         /*tp_setattro*/
 	0,                         /*tp_as_buffer*/
 	Py_TPFLAGS_DEFAULT,        /*tp_flags*/
-	0,                         /*tp_doc*/
+	ISA_doc,                   /*tp_doc*/
 	0,                         /*tp_traverse*/
 	0,                         /*tp_clear*/
 	0,                         /*tp_richcompare*/
@@ -96,24 +96,24 @@ PyTypeObject ISA_type = {
 
 
 static PyGetSetDef GSM_getset[] = {
-	{"dim", (getter)GSM_dim, 0, 0},
-	{"num_scales", (getter)GSM_num_scales, 0, 0},
-	{"scales", (getter)GSM_scales, (setter)GSM_set_scales, 0},
+	{"dim", (getter)GSM_dim, 0, "Dimensionality of the distribution."},
+	{"num_scales", (getter)GSM_num_scales, 0, "Number of possible standard deviations."},
+	{"scales", (getter)GSM_scales, (setter)GSM_set_scales, "Possible standard deviations."},
 	{0}
 };
 
 
 
 static PyMethodDef GSM_methods[] = {
-	{"train", (PyCFunction)GSM_train, METH_VARARGS|METH_KEYWORDS, 0},
-	{"posterior", (PyCFunction)GSM_posterior, METH_VARARGS|METH_KEYWORDS, 0},
-	{"variance", (PyCFunction)GSM_variance, METH_NOARGS, 0},
-	{"normalize", (PyCFunction)GSM_normalize, METH_NOARGS, 0},
-	{"sample", (PyCFunction)GSM_sample, METH_VARARGS|METH_KEYWORDS, 0},
-	{"sample_posterior", (PyCFunction)GSM_sample_posterior, METH_VARARGS|METH_KEYWORDS, 0},
-	{"loglikelihood", (PyCFunction)GSM_loglikelihood, METH_VARARGS|METH_KEYWORDS, 0},
-	{"energy", (PyCFunction)GSM_energy, METH_VARARGS|METH_KEYWORDS, 0},
-	{"energy_gradient", (PyCFunction)GSM_energy_gradient, METH_VARARGS|METH_KEYWORDS, 0},
+	{"train", (PyCFunction)GSM_train, METH_VARARGS|METH_KEYWORDS, GSM_train_doc},
+	{"posterior", (PyCFunction)GSM_posterior, METH_VARARGS|METH_KEYWORDS, GSM_posterior_doc},
+	{"variance", (PyCFunction)GSM_variance, METH_NOARGS, GSM_variance_doc},
+	{"normalize", (PyCFunction)GSM_normalize, METH_NOARGS, GSM_normalize_doc},
+	{"sample", (PyCFunction)GSM_sample, METH_VARARGS|METH_KEYWORDS, GSM_sample_doc},
+	{"sample_posterior", (PyCFunction)GSM_sample_posterior, METH_VARARGS|METH_KEYWORDS, GSM_sample_posterior_doc},
+	{"loglikelihood", (PyCFunction)GSM_loglikelihood, METH_VARARGS|METH_KEYWORDS, GSM_loglikelihood_doc},
+	{"energy", (PyCFunction)GSM_energy, METH_VARARGS|METH_KEYWORDS, GSM_energy_doc},
+	{"energy_gradient", (PyCFunction)GSM_energy_gradient, METH_VARARGS|METH_KEYWORDS, GSM_energy_gradient_doc},
 	{"__reduce__", (PyCFunction)GSM_reduce, METH_NOARGS, 0},
 	{"__setstate__", (PyCFunction)GSM_setstate, METH_VARARGS, 0},
 	{0}
@@ -143,7 +143,7 @@ PyTypeObject GSM_type = {
 	0,                         /*tp_setattro*/
 	0,                         /*tp_as_buffer*/
 	Py_TPFLAGS_DEFAULT,        /*tp_flags*/
-	0,                         /*tp_doc*/
+	GSM_doc,                   /*tp_doc*/
 	0,                         /*tp_traverse*/
 	0,                         /*tp_clear*/
 	0,                         /*tp_richcompare*/

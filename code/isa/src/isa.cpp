@@ -14,7 +14,7 @@
 using namespace std;
 
 #if LBFGS_FLOAT != 64
-#error "libLBFGS needs to be compiled with single precision."
+#error "libLBFGS needs to be compiled with double precision."
 #endif
 
 static lbfgsfloatval_t evaluateLBFGS(void* instance, const lbfgsfloatval_t* x, lbfgsfloatval_t* g, int, double) {
