@@ -68,7 +68,6 @@ modules = [
 			'code/liblbfgs/lib/.libs/liblbfgs.a'],
 		extra_compile_args=[
 			'-O2',
-			'-msse2',
 			'-fopenmp',
 			'-Wno-parentheses',
 			'-Wno-write-strings'] + extra_compile_args)]
