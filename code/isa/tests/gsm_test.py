@@ -6,7 +6,7 @@ sys.path.append('./build/lib.macosx-10.6-intel-2.7')
 sys.path.append('./build/lib.linux-x86_64-2.7')
 
 from isa import GSM
-from numpy import asarray, isnan, any, sqrt, sum, square, std
+from numpy import asarray, isnan, any, sqrt, sum, square, std, mean
 from numpy.random import randn, rand
 from scipy.stats import kstest, norm, laplace, cauchy
 from scipy.optimize import check_grad
@@ -58,6 +58,16 @@ class Tests(unittest.TestCase):
 		# simple sanity checks
 		self.assertEqual(posterior.shape[0], gsm.scales.shape[0])
 		self.assertEqual(posterior.shape[1], samples.shape[1])
+
+		priors = rand(gsm.num_scales) + .1
+		priors = priors / sum(priors)
+
+		gsm.priors = priors
+		avgpost = mean(gsm.posterior(gsm.sample(1000000)), 1)
+
+		# test whether average posterior equals prior
+		self.assertLess(max(abs(avgpost / priors - 1.)), 0.01)
+
 
 
 

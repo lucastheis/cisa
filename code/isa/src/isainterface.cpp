@@ -1390,7 +1390,7 @@ const char* ISA_loglikelihood_doc =
 	"@param return_all: return one estimate for each AIS sample (default: False)\n"
 	"\n"
 	"@rtype: C{ndarray}\n"
-	"@return: logarithm of the estimated density of the given data points";
+	"@return: natural logarithm of the estimated density of the given data points";
 
 PyObject* ISA_loglikelihood(ISAObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"data", "parameters", "return_all", 0};
@@ -1429,9 +1429,10 @@ PyObject* ISA_loglikelihood(ISAObject* self, PyObject* args, PyObject* kwds) {
 
 
 const char* ISA_evaluate_doc =
-	"Estimates the average log-likelihood for a given set of data points using annealed\n"
-	"importance sampling (AIS). This estimator will tend to underestimate the\n"
-	"log-likelihood if the parameters are not chosen well enough.\n"
+	"Estimates the negative average log-likelihood in bits per component for a given\n"
+	"set of data points using annealed importance sampling (AIS). This estimator\n"
+	"will tend to underestimate the log-likelihood if the parameters are not chosen\n"
+	"well enough.\n"
 	"\n"
 	"@type  data: C{ndarray}\n"
 	"@param data: states of the visible units\n"
@@ -1440,7 +1441,7 @@ const char* ISA_evaluate_doc =
 	"@param parameters: parameters controlling AIS (optional)\n"
 	"\n"
 	"@rtype: C{float}\n"
-	"@return: the estimated average log-likelihood";
+	"@return: the estimated negative average log-likelihood in bits per component";
 
 PyObject* ISA_evaluate(ISAObject* self, PyObject* args, PyObject* kwds) {
 	const char* kwlist[] = {"data", "parameters", 0};

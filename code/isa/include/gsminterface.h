@@ -34,6 +34,9 @@ void GSM_dealloc(GSMObject*);
 PyObject* GSM_dim(GSMObject*, PyObject*, void*);
 PyObject* GSM_num_scales(GSMObject*, PyObject*, void*);
 
+PyObject* GSM_priors(GSMObject*, PyObject*, void*);
+int GSM_set_priors(GSMObject*, PyObject*, void*);
+
 PyObject* GSM_scales(GSMObject*, PyObject*, void*);
 int GSM_set_scales(GSMObject*, PyObject*, void*);
 

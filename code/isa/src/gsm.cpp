@@ -8,6 +8,7 @@ using std::log;
 using std::rand;
 
 GSM::GSM(int dim, int numScales) : mDim(dim), mNumScales(numScales) {
+	mPriors = ArrayXd::Ones(mNumScales) / mNumScales;
 	mScales = 1. + ArrayXd::Random(mNumScales) / 4.;
 	mScales /= mScales.mean();
 }
@@ -27,6 +28,8 @@ bool GSM::train(const MatrixXd& data, int maxIter, double tol) {
 		ArrayXXd post = posterior(data, sqNorms);
 
 		// update parameters (M)
+		mPriors = post.rowwise().mean() + 1e-6;
+		mPriors /= mPriors.sum();
 		mScales = (((post.rowwise() * sqNorms.array()).rowwise().mean() + 1e-9)
 			/ (mDim * post.rowwise().mean() + 3e-9)).sqrt();
 
@@ -49,9 +52,17 @@ bool GSM::train(const MatrixXd& data, int maxIter, double tol) {
 MatrixXd GSM::sample(int numSamples) {
 	Array<double, 1, Dynamic> scales(1, numSamples);
 
-	// pick random standard deviations
-	for(int i = 0; i < numSamples; ++i)
-		scales[i] = mScales[rand() % mNumScales];
+	#pragma omp parallel for
+	for(int j = 0; j < numSamples; ++j) {
+		int i = 0;
+		double urand = static_cast<double>(rand()) / (static_cast<long>(RAND_MAX) + 1l);
+
+		// compute index
+		for(double cdf = mPriors[0]; cdf < urand; cdf += mPriors[i])
+			++i;
+
+		scales[j] = mScales[i];
+	}
 
 	// scale normal samples
 	return sampleNormal(mDim, numSamples).rowwise() * scales;
@@ -63,13 +74,13 @@ Array<double, 1, Dynamic> GSM::samplePosterior(const MatrixXd& data) {
 	Array<double, 1, Dynamic> scales(data.cols());
 	ArrayXXd post = posterior(data);
 
+	#pragma omp parallel for
 	for(int j = 0; j < post.cols(); ++j) {
 		int i = 0;
 		double urand = static_cast<double>(rand()) / (static_cast<long>(RAND_MAX) + 1l);
-		double cdf;
 
 		// compute index
-		for(cdf = post(0, j); cdf < urand; cdf += post(i, j))
+		for(double cdf = post(0, j); cdf < urand; cdf += post(i, j))
 			++i;
 
 		scales[j] = mScales[i];
@@ -108,7 +119,7 @@ ArrayXXd GSM::logJoint(const MatrixXd& data) {
 
 ArrayXXd GSM::logJoint(const MatrixXd& data, const RowVectorXd& sqNorms) {
 	return (-0.5 * mScales.square().inverse().matrix() * sqNorms).colwise()
-		- mDim * mScales.log().matrix();
+		+ (mPriors.log() - mDim * mScales.log()).matrix();
 }
 
 
@@ -126,13 +137,13 @@ Array<double, 1, Dynamic> GSM::logLikelihood(const MatrixXd& data, const RowVect
 
 
 Array<double, 1, Dynamic> GSM::energy(const MatrixXd& data) {
-	return -logmeanexp(logJoint(data));
+	return -logsumexp(logJoint(data));
 }
 
 
 
 Array<double, 1, Dynamic> GSM::energy(const MatrixXd& data, const RowVectorXd& sqNorms) {
-	return -logmeanexp(logJoint(data, sqNorms));
+	return -logsumexp(logJoint(data, sqNorms));
 }
 
 

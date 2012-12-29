@@ -60,6 +60,41 @@ PyObject* GSM_num_scales(GSMObject* self, PyObject*, void*) {
 
 
 
+PyObject* GSM_priors(GSMObject* self, PyObject*, void*) {
+	PyObject* array = PyArray_FromMatrixXd(self->gsm->priors());
+
+	// make array immutable
+	reinterpret_cast<PyArrayObject*>(array)->flags &= ~NPY_WRITEABLE;
+
+	return array;
+}
+
+
+
+int GSM_set_priors(GSMObject* self, PyObject* value, void*) {
+	PyObject* array = PyArray_FROM_OTF(value, NPY_DOUBLE, NPY_IN_ARRAY);
+
+	if(!array) {
+		PyErr_SetString(PyExc_TypeError, "Prior weights should be of type `ndarray`.");
+		return -1;
+	}
+
+	try {
+		self->gsm->setPriors(PyArray_ToMatrixXd(array));
+
+	} catch(Exception exception) {
+		Py_DECREF(array);
+		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		return -1;
+	}
+
+	Py_DECREF(array);
+
+	return 0;
+}
+
+
+
 PyObject* GSM_scales(GSMObject* self, PyObject*, void*) {
 	PyObject* array = PyArray_FromMatrixXd(self->gsm->scales());
 

@@ -92,7 +92,8 @@ isa.train(data, parameters={
 		'max_iter': 50,
 		'step_width': 0.01,
 		'batch_size': 100,
-		'num_coeff': 10},
+		'num_coeff': 10 # number of active coefficients
+	},
 	'callback': callback})
 
 # optimize model using persistent EM

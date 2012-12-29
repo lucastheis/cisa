@@ -17,7 +17,10 @@ class GSM : public Distribution {
 		inline int dim();
 		inline int numScales();
 
-		inline ArrayXd scales();
+		inline ArrayXd priors() const;
+		inline void setPriors(MatrixXd priors);
+
+		inline ArrayXd scales() const;
 		inline void setScales(MatrixXd scales);
 
 		inline double variance();
@@ -46,6 +49,7 @@ class GSM : public Distribution {
 	protected:
 		int mDim;
 		int mNumScales;
+		ArrayXd mPriors;
 		ArrayXd mScales;
 };
 
@@ -63,7 +67,26 @@ inline int GSM::numScales() {
 
 
 
-inline ArrayXd GSM::scales() {
+inline ArrayXd GSM::priors() const {
+	return mPriors;
+}
+
+
+
+inline void GSM::setPriors(MatrixXd priors) {
+	// turn row vector into column vector
+	if(priors.cols() > priors.rows())
+		priors.transposeInPlace();
+
+	if(priors.rows() != mNumScales || priors.cols() != 1)
+		throw Exception("Wrong number of prior weights.");
+
+	mPriors = priors / priors.sum();
+}
+
+
+
+inline ArrayXd GSM::scales() const {
 	return mScales;
 }
 

@@ -98,6 +98,7 @@ PyTypeObject ISA_type = {
 static PyGetSetDef GSM_getset[] = {
 	{"dim", (getter)GSM_dim, 0, "Dimensionality of the distribution."},
 	{"num_scales", (getter)GSM_num_scales, 0, "Number of possible standard deviations."},
+	{"priors", (getter)GSM_priors, (setter)GSM_set_priors, "Prior probabilities of standard deviations."},
 	{"scales", (getter)GSM_scales, (setter)GSM_set_scales, "Possible standard deviations."},
 	{0}
 };
