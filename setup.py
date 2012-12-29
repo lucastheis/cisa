@@ -11,7 +11,6 @@ from distutils.ccompiler import CCompiler, get_default_compiler
 from tools import parallelCCompiler
 from numpy.distutils.intelccompiler import IntelCCompiler
 from numpy import any
-from getopt import getopt
 
 # heuristic for figuring out which compiler is being used (icc, gcc)
 if any(['intel' in arg for arg in sys.argv]) or 'intel' in get_default_compiler():
