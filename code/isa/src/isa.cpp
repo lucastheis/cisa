@@ -303,52 +303,67 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 	}
 
 	for(int i = 0; i < params.maxIter; ++i) {
-		MatrixXd complBasis(numHiddens(), numHiddens());
-		MatrixXd complData(numHiddens(), data.cols());
-
 		// sample hidden states
 		mHiddenStates = params.persistent ?
 			samplePosterior(data, mHiddenStates, params) :
 			samplePosterior(data, params);
 
-		// complete basis and data
-		if(numHiddens() > numVisibles()) {
-			complBasis << basis(), nullspaceBasis();
-			complData << data, nullspaceBasis() * mHiddenStates;
-		} else {
-			// TODO: unnecessary copy
-			complBasis << basis();
-			complData << data;
-		}
-
 		if(params.trainPrior)
 			// optimize marginal distributions
 			trainPrior(mHiddenStates, params);
 
-		if(params.mergeSubspaces)
-			mHiddenStates = mergeSubspaces(mHiddenStates, params);
+ 		if(params.mergeSubspaces)
+ 			mHiddenStates = mergeSubspaces(mHiddenStates, params);
 
 		if(params.trainBasis) {
+			const MatrixXd* complBasis;
+			const MatrixXd* complData;
+
+			// complete basis and data
+			if(numHiddens() > numVisibles()) {
+				MatrixXd nullBasis = nullspaceBasis();
+				MatrixXd* complBasisTmp;
+				MatrixXd* complDataTmp;
+
+				// memory is only allocated if model is overcomplete
+				complBasisTmp = new MatrixXd(numHiddens(), numHiddens());
+				complDataTmp = new MatrixXd(numHiddens(), data.cols());
+
+				*complBasisTmp << mBasis, nullBasis;
+				*complDataTmp << data, nullBasis * mHiddenStates;
+				
+				complBasis = complBasisTmp;
+				complBasis = complBasisTmp;
+			} else {
+				complBasis = &mBasis;
+				complData = &data;
+			}
+
 			// optimize basis
 			bool improved;
 
 			switch(params.trainingMethod[0]) {
 				case 's':
 				case 'S':
-					improved = trainSGD(complData, complBasis, params);
+					improved = trainSGD(*complData, *complBasis, params);
 
 					if(params.adaptive)
-						// adapt step width
+						// adjust step width
 						params.sgd.stepWidth *= improved ? 1.1 : 0.5;
 					break;
 
 				case 'l':
 				case 'L':
-					trainLBFGS(complData, complBasis, params);
+					trainLBFGS(*complData, *complBasis, params);
 					break;
 
 				default:
 					throw Exception("Unknown training method.");
+			}
+
+			if(numHiddens() > numVisibles()) {
+				delete complBasis;
+				delete complData;
 			}
 		}
 
