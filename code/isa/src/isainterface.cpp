@@ -184,14 +184,14 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 			mp = PyDict_GetItemString(parameters, "mp");
 
 		if(mp && PyDict_Check(mp)) {
-			PyObject* maxIter = PyDict_GetItemString(mp, "max_iter");
-			if(maxIter)
-				if(PyInt_Check(maxIter))
-					params.mp.maxIter = PyInt_AsLong(maxIter);
-				else if(PyFloat_Check(maxIter))
-					params.mp.maxIter = static_cast<int>(PyFloat_AsDouble(maxIter));
-				else
-					throw Exception("mp.max_iter should be of type `int`.");
+ 			PyObject* maxIter = PyDict_GetItemString(mp, "max_iter");
+ 			if(maxIter)
+ 				if(PyInt_Check(maxIter))
+ 					params.mp.maxIter = PyInt_AsLong(maxIter);
+ 				else if(PyFloat_Check(maxIter))
+ 					params.mp.maxIter = static_cast<int>(PyFloat_AsDouble(maxIter));
+ 				else
+ 					throw Exception("mp.max_iter should be of type `int`.");
 
 			PyObject* batchSize = PyDict_GetItemString(mp, "batch_size");
 			if(batchSize)
@@ -221,11 +221,11 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 					throw Exception("mp.momentum should be of type `float`.");
 
 			PyObject* numCoeff = PyDict_GetItemString(mp, "num_coeff");
-			if(maxIter)
+			if(numCoeff)
 				if(PyInt_Check(numCoeff))
 					params.mp.numCoeff = PyInt_AsLong(numCoeff);
 				else if(PyFloat_Check(numCoeff))
-					params.mp.numCoeff = static_cast<int>(PyFloat_AsDouble(maxIter));
+					params.mp.numCoeff = static_cast<int>(PyFloat_AsDouble(numCoeff));
 				else
 					throw Exception("mp.num_coeff should be of type `int`.");
 		}
