@@ -102,30 +102,30 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 			sgd = PyDict_GetItemString(parameters, "SGD");
 
 		if(sgd && PyDict_Check(sgd)) {
-			PyObject* maxIter = PyDict_GetItemString(sgd, "max_iter");
-			if(maxIter)
-				if(PyInt_Check(maxIter))
-					params.sgd.maxIter = PyInt_AsLong(maxIter);
-				else if(PyFloat_Check(maxIter))
-					params.sgd.maxIter = static_cast<int>(PyFloat_AsDouble(maxIter));
+			PyObject* max_iter = PyDict_GetItemString(sgd, "max_iter");
+			if(max_iter)
+				if(PyInt_Check(max_iter))
+					params.sgd.maxIter = PyInt_AsLong(max_iter);
+				else if(PyFloat_Check(max_iter))
+					params.sgd.maxIter = static_cast<int>(PyFloat_AsDouble(max_iter));
 				else
 					throw Exception("sgd.max_iter should be of type `int`.");
 
-			PyObject* batchSize = PyDict_GetItemString(sgd, "batch_size");
-			if(batchSize)
-				if(PyInt_Check(batchSize))
-					params.sgd.batchSize = PyInt_AsLong(batchSize);
-				else if(PyFloat_Check(batchSize))
-					params.sgd.batchSize = static_cast<int>(PyFloat_AsDouble(batchSize));
+			PyObject* batch_size = PyDict_GetItemString(sgd, "batch_size");
+			if(batch_size)
+				if(PyInt_Check(batch_size))
+					params.sgd.batchSize = PyInt_AsLong(batch_size);
+				else if(PyFloat_Check(batch_size))
+					params.sgd.batchSize = static_cast<int>(PyFloat_AsDouble(batch_size));
 				else
 					throw Exception("sgd.batch_size should be of type `int`.");
 
-			PyObject* stepWidth = PyDict_GetItemString(sgd, "step_width");
-			if(stepWidth)
-				if(PyFloat_Check(stepWidth))
-					params.sgd.stepWidth = PyFloat_AsDouble(stepWidth);
-				else if(PyInt_Check(stepWidth))
-					params.sgd.stepWidth = static_cast<double>(PyInt_AsLong(stepWidth));
+			PyObject* step_width = PyDict_GetItemString(sgd, "step_width");
+			if(step_width)
+				if(PyFloat_Check(step_width))
+					params.sgd.stepWidth = PyFloat_AsDouble(step_width);
+				else if(PyInt_Check(step_width))
+					params.sgd.stepWidth = static_cast<double>(PyInt_AsLong(step_width));
 				else
 					throw Exception("sgd.step_width should be of type `float`.");
 
@@ -159,21 +159,21 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 			lbfgs = PyDict_GetItemString(parameters, "LBFGS");
 
 		if(lbfgs && PyDict_Check(lbfgs)) {
-			PyObject* maxIter = PyDict_GetItemString(lbfgs, "max_iter");
-			if(maxIter)
-				if(PyInt_Check(maxIter))
-					params.lbfgs.maxIter = PyInt_AsLong(maxIter);
-				else if(PyFloat_Check(maxIter))
-					params.lbfgs.maxIter = static_cast<int>(PyFloat_AsDouble(maxIter));
+			PyObject* max_iter = PyDict_GetItemString(lbfgs, "max_iter");
+			if(max_iter)
+				if(PyInt_Check(max_iter))
+					params.lbfgs.maxIter = PyInt_AsLong(max_iter);
+				else if(PyFloat_Check(max_iter))
+					params.lbfgs.maxIter = static_cast<int>(PyFloat_AsDouble(max_iter));
 				else
 					throw Exception("lbfgs.max_iter should be of type `int`.");
 
-			PyObject* numGrad = PyDict_GetItemString(lbfgs, "num_grad");
-			if(numGrad)
-				if(PyInt_Check(numGrad))
-					params.lbfgs.numGrad = PyInt_AsLong(numGrad);
-				else if(PyFloat_Check(numGrad))
-					params.lbfgs.numGrad = static_cast<int>(PyFloat_AsDouble(numGrad));
+			PyObject* num_grad = PyDict_GetItemString(lbfgs, "num_grad");
+			if(num_grad)
+				if(PyInt_Check(num_grad))
+					params.lbfgs.numGrad = PyInt_AsLong(num_grad);
+				else if(PyFloat_Check(num_grad))
+					params.lbfgs.numGrad = static_cast<int>(PyFloat_AsDouble(num_grad));
 				else
 					throw Exception("lbfgs.num_grad should be of type `int`.");
 		}
@@ -184,30 +184,30 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 			mp = PyDict_GetItemString(parameters, "mp");
 
 		if(mp && PyDict_Check(mp)) {
- 			PyObject* maxIter = PyDict_GetItemString(mp, "max_iter");
- 			if(maxIter)
- 				if(PyInt_Check(maxIter))
- 					params.mp.maxIter = PyInt_AsLong(maxIter);
- 				else if(PyFloat_Check(maxIter))
- 					params.mp.maxIter = static_cast<int>(PyFloat_AsDouble(maxIter));
+ 			PyObject* max_iter = PyDict_GetItemString(mp, "max_iter");
+ 			if(max_iter)
+ 				if(PyInt_Check(max_iter))
+ 					params.mp.maxIter = PyInt_AsLong(max_iter);
+ 				else if(PyFloat_Check(max_iter))
+ 					params.mp.maxIter = static_cast<int>(PyFloat_AsDouble(max_iter));
  				else
  					throw Exception("mp.max_iter should be of type `int`.");
 
-			PyObject* batchSize = PyDict_GetItemString(mp, "batch_size");
-			if(batchSize)
-				if(PyInt_Check(batchSize))
-					params.mp.batchSize = PyInt_AsLong(batchSize);
-				else if(PyFloat_Check(batchSize))
-					params.mp.batchSize = static_cast<int>(PyFloat_AsDouble(batchSize));
+			PyObject* batch_size = PyDict_GetItemString(mp, "batch_size");
+			if(batch_size)
+				if(PyInt_Check(batch_size))
+					params.mp.batchSize = PyInt_AsLong(batch_size);
+				else if(PyFloat_Check(batch_size))
+					params.mp.batchSize = static_cast<int>(PyFloat_AsDouble(batch_size));
 				else
 					throw Exception("mp.batch_size should be of type `int`.");
 
-			PyObject* stepWidth = PyDict_GetItemString(mp, "step_width");
-			if(stepWidth)
-				if(PyFloat_Check(stepWidth))
-					params.mp.stepWidth = PyFloat_AsDouble(stepWidth);
-				else if(PyInt_Check(stepWidth))
-					params.mp.stepWidth = static_cast<double>(PyInt_AsLong(stepWidth));
+			PyObject* step_width = PyDict_GetItemString(mp, "step_width");
+			if(step_width)
+				if(PyFloat_Check(step_width))
+					params.mp.stepWidth = PyFloat_AsDouble(step_width);
+				else if(PyInt_Check(step_width))
+					params.mp.stepWidth = static_cast<double>(PyInt_AsLong(step_width));
 				else
 					throw Exception("mp.step_width should be of type `float`.");
 
@@ -220,12 +220,12 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 				else
 					throw Exception("mp.momentum should be of type `float`.");
 
-			PyObject* numCoeff = PyDict_GetItemString(mp, "num_coeff");
-			if(numCoeff)
-				if(PyInt_Check(numCoeff))
-					params.mp.numCoeff = PyInt_AsLong(numCoeff);
-				else if(PyFloat_Check(numCoeff))
-					params.mp.numCoeff = static_cast<int>(PyFloat_AsDouble(numCoeff));
+			PyObject* num_coeff = PyDict_GetItemString(mp, "num_coeff");
+			if(num_coeff)
+				if(PyInt_Check(num_coeff))
+					params.mp.numCoeff = PyInt_AsLong(num_coeff);
+				else if(PyFloat_Check(num_coeff))
+					params.mp.numCoeff = static_cast<int>(PyFloat_AsDouble(num_coeff));
 				else
 					throw Exception("mp.num_coeff should be of type `int`.");
 		}
@@ -236,12 +236,12 @@ ISA::Parameters PyObject_ToParameters(ISAObject* self, PyObject* parameters) {
 			gsm = PyDict_GetItemString(parameters, "GSM");
 
 		if(gsm && PyDict_Check(gsm)) {
-			PyObject* maxIter = PyDict_GetItemString(gsm, "max_iter");
-			if(maxIter)
-				if(PyInt_Check(maxIter))
-					params.gsm.maxIter = PyInt_AsLong(maxIter);
-				else if(PyFloat_Check(maxIter))
-					params.gsm.maxIter = static_cast<int>(PyFloat_AsDouble(maxIter));
+			PyObject* max_iter = PyDict_GetItemString(gsm, "max_iter");
+			if(max_iter)
+				if(PyInt_Check(max_iter))
+					params.gsm.maxIter = PyInt_AsLong(max_iter);
+				else if(PyFloat_Check(max_iter))
+					params.gsm.maxIter = static_cast<int>(PyFloat_AsDouble(max_iter));
 				else
 					throw Exception("gsm.max_iter should be of type `int`.");
 
@@ -1178,6 +1178,7 @@ PyObject* ISA_sample_ais(ISAObject* self, PyObject* args, PyObject* kwds) {
 		return samples;
 	} catch(Exception exception) {
 		PyErr_SetString(PyExc_RuntimeError, exception.message());
+		Py_DECREF(data);
 		return 0;
 	}
 
