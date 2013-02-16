@@ -2,8 +2,6 @@ import sys
 import unittest
 
 sys.path.append('./code')
-sys.path.append('./build/lib.macosx-10.6-intel-2.7')
-sys.path.append('./build/lib.linux-x86_64-2.7')
 
 from isa import ISA
 from numpy import sqrt, sum, square, dot, var, eye, cov, diag, std, max, asarray, mean

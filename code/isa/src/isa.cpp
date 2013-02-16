@@ -502,15 +502,12 @@ void ISA::trainMP(const MatrixXd& data, const Parameters& params) {
 	MatrixXd P = MatrixXd::Zero(mBasis.rows(), mBasis.cols());
 	MatrixXd X, Y;
 
+	// normalize length of basis vectors
 	mBasis = normalize(mBasis);
 
 	if(params.mp.callback)
 		if(!(*params.mp.callback)(0, *this))
 			return;
-
-	int from[numSubspaces()];
-	for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
-		from[i] = f;
 
 	for(int i = 0; i < params.mp.maxIter; ++i) {
 		for(int j = 0; j + params.mp.batchSize <= data.cols(); j += params.mp.batchSize) {
@@ -532,7 +529,11 @@ void ISA::trainMP(const MatrixXd& data, const Parameters& params) {
 				break;
 	}
 
-	if(numSubspaces() != numHiddens())
+	if(numSubspaces() != numHiddens()) {
+		int from[numSubspaces()];
+		for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
+			from[i] = f;
+
 		# pragma omp parallel for
 		for(int j = 0; j < numSubspaces(); ++j) {
 			// orthogonalize subspace
@@ -540,6 +541,7 @@ void ISA::trainMP(const MatrixXd& data, const Parameters& params) {
 			SelfAdjointEigenSolver<MatrixXd> eigenSolver(subsp.transpose() * subsp);
 			mBasis.middleCols(from[j], mSubspaces[j].dim()) = subsp * eigenSolver.operatorInverseSqrt();
 		}
+	}
 }
 
 
@@ -547,7 +549,7 @@ void ISA::trainMP(const MatrixXd& data, const Parameters& params) {
 MatrixXd ISA::matchingPursuit(const MatrixXd& data, const Parameters& params) {
 	MatrixXd hiddenStates = MatrixXd::Zero(numHiddens(), data.cols());
 
-	// assumes basis is normalized
+	// assumes basis vectors are normalized
 	MatrixXd responses = mBasis.transpose() * data;
 	MatrixXd gramMatrix = mBasis.transpose() * mBasis;
 
