@@ -333,7 +333,7 @@ void ISA::train(const MatrixXd& data, Parameters params) {
 				*complDataTmp << data, nullBasis * mHiddenStates;
 				
 				complBasis = complBasisTmp;
-				complBasis = complBasisTmp;
+				complData = complDataTmp;
 			} else {
 				complBasis = &mBasis;
 				complData = &data;

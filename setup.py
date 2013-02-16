@@ -24,6 +24,7 @@ if any(['intel' in arg for arg in sys.argv]) or 'intel' in get_default_compiler(
 		'mkl_intel_lp64',
 		'mkl_intel_thread',
 		'mkl_core',
+		'mkl_def',
 		'iomp5']
 	extra_compile_args = [
 		'-DEIGEN_PERMANENTLY_DISABLE_STUPID_WARNINGS',
