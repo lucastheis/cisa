@@ -29,7 +29,8 @@ if any(['intel' in arg for arg in sys.argv]) or 'intel' in get_default_compiler(
 	extra_compile_args = [
 		'-DEIGEN_PERMANENTLY_DISABLE_STUPID_WARNINGS',
 		'-DEIGEN_USE_MKL_ALL',
-		'-wd1224']
+		'-wd1224',
+		'-openmp']
 	extra_link_args = []
 
 	for path in ['/opt/intel/mkl/lib/intel64', '/opt/intel/lib/intel64']:
@@ -44,12 +45,12 @@ else:
 	extra_link_args = []
 
 	if sys.platform != 'darwin':
-		extra_compile_args += ['-Wno-cpp']
+		extra_compile_args += ['-Wno-cpp', '-fopenmp']
 		libraries += ['gomp']
 		
 
 if sys.platform != 'darwin':
-	extra_compile_args += ['-std=c++0x', '-fopenmp']
+	extra_compile_args += ['-std=c++0x']
 
 modules = [
 	Extension('isa',
