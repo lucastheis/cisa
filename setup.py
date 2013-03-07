@@ -47,7 +47,6 @@ else:
 	if sys.platform != 'darwin':
 		extra_compile_args += ['-Wno-cpp', '-fopenmp']
 		libraries += ['gomp']
-		
 
 if sys.platform != 'darwin':
 	extra_compile_args += ['-std=c++0x']
