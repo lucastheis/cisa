@@ -39,16 +39,17 @@ else:
 	# gcc-specific options
 	include_dirs = []
 	library_dirs = []
-	libraries = [
-		'gomp']
+	libraries = []
 	extra_compile_args = []
 	extra_link_args = []
 
 	if sys.platform != 'darwin':
 		extra_compile_args += ['-Wno-cpp']
+		libraries += ['gomp']
+		
 
 if sys.platform != 'darwin':
-	extra_compile_args += ['-std=c++0x']
+	extra_compile_args += ['-std=c++0x', '-fopenmp']
 
 modules = [
 	Extension('isa',
@@ -73,8 +74,6 @@ modules = [
 		extra_link_args=[
 			'code/liblbfgs/lib/.libs/liblbfgs.a'] + extra_link_args,
 		extra_compile_args=[
-			'-O2',
-			'-fopenmp',
 			'-Wno-parentheses',
 			'-Wno-write-strings'] + extra_compile_args)]
 
@@ -83,7 +82,7 @@ CCompiler.compile = parallelCCompiler
 
 setup(
 	name='isa',
-	version='0.4.2',
+	version='0.4.3',
 	author='Lucas Theis',
 	author_email='lucas@theis.io',
 	description='A C++ implementation of overcomplete ISA.',
