@@ -741,7 +741,6 @@ MatrixXd ISA::sampleScales(const MatrixXd& states) {
 	for(int f = 0, i = 0; i < numSubspaces(); f += mSubspaces[i].dim(), ++i)
 		from[i] = f;
 
-	#pragma omp parallel for
 	for(int i = 0; i < numSubspaces(); ++i)
 		scales.middleRows(from[i], mSubspaces[i].dim()).rowwise() =
 			mSubspaces[i].samplePosterior(states.middleRows(from[i], mSubspaces[i].dim())).matrix();

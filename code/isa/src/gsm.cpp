@@ -52,7 +52,6 @@ bool GSM::train(const MatrixXd& data, int maxIter, double tol) {
 MatrixXd GSM::sample(int numSamples) {
 	Array<double, 1, Dynamic> scales(1, numSamples);
 
-	#pragma omp parallel for
 	for(int j = 0; j < numSamples; ++j) {
 		int i = 0;
 		double urand = static_cast<double>(rand()) / (static_cast<long>(RAND_MAX) + 1l);
