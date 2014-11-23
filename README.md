@@ -118,10 +118,3 @@ parameters = isa.default_parameters()
 
 L. Theis, J. Sohl-Dickstein, and M. Bethge, *Training sparse natural image models with a fast Gibbs
 sampler of an extended state space*, Advances in Neural Information Processing Systems 25, 2012
-
-
-## Known issues
-
-Using OpenMP on Mac OS X can lead to segmentation faults. If this happens to you, try disabling
-parallelism (via `export OMP_NUM_THREADS=0` in the terminal) or using another compiler than the
-outdated version of GCC that comes with Mac.

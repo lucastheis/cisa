@@ -29,7 +29,8 @@ if any(['intel' in arg for arg in sys.argv]) or 'intel' in get_default_compiler(
 	extra_compile_args = [
 		'-DEIGEN_PERMANENTLY_DISABLE_STUPID_WARNINGS',
 		'-DEIGEN_USE_MKL_ALL',
-		'-wd1224']
+		'-wd1224',
+		'-openmp']
 	extra_link_args = []
 
 	for path in ['/opt/intel/mkl/lib/intel64', '/opt/intel/lib/intel64']:
@@ -39,13 +40,13 @@ else:
 	# gcc-specific options
 	include_dirs = []
 	library_dirs = []
-	libraries = [
-		'gomp']
+	libraries = []
 	extra_compile_args = []
 	extra_link_args = []
 
 	if sys.platform != 'darwin':
-		extra_compile_args += ['-Wno-cpp']
+		extra_compile_args += ['-Wno-cpp', '-fopenmp']
+		libraries += ['gomp']
 
 if sys.platform != 'darwin':
 	extra_compile_args += ['-std=c++0x']
@@ -73,8 +74,6 @@ modules = [
 		extra_link_args=[
 			'code/liblbfgs/lib/.libs/liblbfgs.a'] + extra_link_args,
 		extra_compile_args=[
-			'-O2',
-			'-fopenmp',
 			'-Wno-parentheses',
 			'-Wno-write-strings'] + extra_compile_args)]
 
@@ -83,7 +82,7 @@ CCompiler.compile = parallelCCompiler
 
 setup(
 	name='isa',
-	version='0.4.1',
+	version='0.4.3',
 	author='Lucas Theis',
 	author_email='lucas@theis.io',
 	description='A C++ implementation of overcomplete ISA.',
